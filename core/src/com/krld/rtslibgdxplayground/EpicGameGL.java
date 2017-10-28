@@ -10,8 +10,11 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
+import com.krld.rtslibgdxplayground.eg.*;
 
-public class Game extends ApplicationAdapter {
+import java.awt.*;
+
+public class EpicGameGL extends ApplicationAdapter implements UIDelegate {
     public static final int WORLD_SIZE = 2000;
     SpriteBatch batch;
     Texture img;
@@ -21,9 +24,18 @@ public class Game extends ApplicationAdapter {
     private OrthographicCamera cam;
     private float rotationSpeed;
     private ShapeRenderer shapes;
+    private int gameWidth;
+    private int gameHeight;
+    private boolean isNotReady;
 
     @Override
     public void create() {
+        isNotReady = true;
+
+        startGameStuff();
+
+
+
         batch = new SpriteBatch();
         font = new BitmapFont(true);
 
@@ -39,8 +51,39 @@ public class Game extends ApplicationAdapter {
         cam.update();
     }
 
+    private void startGameStuff() {
+        new Thread(() -> {
+            System.out.println("Starting...");
+            // test github
+            gameWidth = 30;
+            gameHeight = 30;
+            int spawnUnitCount = 5;
+            int cellSize = 16;
+            World world = new World(gameWidth, gameHeight, spawnUnitCount, cellSize, this);
+            Game game = new Game(world);
+            Player player1 = new Player();
+
+            player1.setColor(Color.RED);
+            player1.setClassStategy(MyStrategy.class.getName());
+
+            Player player2 = new Player();
+
+            player2.setColor(Color.BLUE);
+            player2.setClassStategy(DummyStrategy.class.getName());
+
+
+            world.addPlayer(player1, 2, 2);
+            world.addPlayer(player2, gameWidth - 2, gameHeight - 2);
+
+            System.out.println("Run game...");
+            game.run();
+        }).start();
+
+    }
+
     @Override
     public void render() {
+        isNotReady = true;
         handleInput();
         cam.update();
         batch.setProjectionMatrix(cam.combined);
@@ -61,6 +104,7 @@ public class Game extends ApplicationAdapter {
         shapes.setColor(com.badlogic.gdx.graphics.Color.BLUE);
         shapes.circle(200, 200, 15);
         shapes.end();
+        isNotReady = false;
     }
 
     private void handleInput() {
@@ -102,5 +146,15 @@ public class Game extends ApplicationAdapter {
     @Override
     public void dispose() {
         batch.dispose();
+    }
+
+    @Override
+    public void update() {
+        //TODO something
+    }
+
+    @Override
+    public boolean isNotReady() {
+        return isNotReady;
     }
 }
