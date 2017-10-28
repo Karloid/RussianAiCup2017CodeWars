@@ -19,10 +19,11 @@ import com.krld.rtslibgdxplayground.eg.strats.MyStrategy;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 public class EpicGameGL extends ApplicationAdapter implements UIDelegate {
     public static final int WORLD_SIZE = 2000;
-    public static final int CELL_SIZE = 16;
+    public static final int CELL_SIZE = 12;
 
     SpriteBatch batch;
 
@@ -32,14 +33,13 @@ public class EpicGameGL extends ApplicationAdapter implements UIDelegate {
     private OrthographicCamera cam;
     private float rotationSpeed;
     private ShapeRenderer g;
-    private int gameWidth;
-    private int gameHeight;
-    private boolean isNotReady;
+    private int gameWidth = 60;
+    private int gameHeight = 60;
     private World world;
+    private int spawnUnitCount = 30;
 
     @Override
     public void create() {
-        isNotReady = true;
 
         startGameStuff();
 
@@ -60,12 +60,10 @@ public class EpicGameGL extends ApplicationAdapter implements UIDelegate {
     }
 
     private void startGameStuff() {
+        CountDownLatch cdl = new CountDownLatch(1);
         new Thread(() -> {
             System.out.println("Starting...");
             // test github
-            gameWidth = 25;
-            gameHeight = 25;
-            int spawnUnitCount = 9;
             world = new World(gameWidth, gameHeight, spawnUnitCount, CELL_SIZE, this);
             Game game = new Game(world);
             Player player1 = new Player();
@@ -83,14 +81,19 @@ public class EpicGameGL extends ApplicationAdapter implements UIDelegate {
             world.addPlayer(player2, gameWidth - 2, gameHeight - 2);
 
             System.out.println("Run game...");
+            cdl.countDown();
             game.run();
         }).start();
-
+        try {
+            cdl.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void render() {
-        isNotReady = true;
+        world.reentrantLock.lock();
         handleInput();
         cam.update();
         g.setProjectionMatrix(cam.combined);
@@ -127,7 +130,7 @@ public class EpicGameGL extends ApplicationAdapter implements UIDelegate {
 
         drawScore();
         batch.end();
-        isNotReady = false;
+        world.reentrantLock.unlock();
     }
 
     private void drawUnitsFont() {
@@ -143,7 +146,6 @@ public class EpicGameGL extends ApplicationAdapter implements UIDelegate {
 
             font.draw(batch, str, unit.x * CELL_SIZE + CELL_SIZE / 4, unit.y * CELL_SIZE /*+ CELL_SIZE*/);
         }
-
     }
 
     private void drawDebug() {
@@ -294,8 +296,4 @@ public class EpicGameGL extends ApplicationAdapter implements UIDelegate {
         //TODO something
     }
 
-    @Override
-    public boolean isNotReady() {
-        return isNotReady;
-    }
 }

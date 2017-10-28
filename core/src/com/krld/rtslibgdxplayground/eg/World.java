@@ -3,6 +3,7 @@ package com.krld.rtslibgdxplayground.eg;
 import com.krld.rtslibgdxplayground.eg.models.*;
 
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class World {
     private final int spawnUnitCount;
@@ -17,8 +18,11 @@ public class World {
     private int moveCount;
     public Map<Unit, Move> moves;
     public List<Corpse> corpses;
+    public ReentrantLock reentrantLock;
 
     public World(int width, int height, int spawnUnitCount, int cellSize, UIDelegate uiDelegate) {
+        reentrantLock = new ReentrantLock();
+
         players = new ArrayList<Player>();
         units = new ArrayList<Unit>();
         corpses = new ArrayList<Corpse>();
@@ -199,6 +203,7 @@ public class World {
 
 
     public void update() {
+        reentrantLock.lock();
         moveCount++;
         long startUpdate = System.currentTimeMillis();
         long seed = System.nanoTime();
@@ -214,13 +219,7 @@ public class World {
         uiDelegate.update();
 
         checkEndGame();
-        while (uiDelegate.isNotReady()) {
-            try {
-                Thread.sleep(50);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+        reentrantLock.unlock();
 
         if (System.currentTimeMillis() - startUpdate < delayTurnMs)
             try {
