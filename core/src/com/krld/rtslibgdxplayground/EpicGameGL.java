@@ -14,8 +14,8 @@ import com.badlogic.gdx.math.MathUtils;
 import com.krld.rtslibgdxplayground.eg.UIDelegate;
 import com.krld.rtslibgdxplayground.eg.World;
 import com.krld.rtslibgdxplayground.eg.models.*;
-import com.krld.rtslibgdxplayground.eg.strats.DummyStrategy;
-import com.krld.rtslibgdxplayground.eg.strats.MyStrategy;
+import com.krld.rtslibgdxplayground.eg.strats.QuickGuy6;
+import com.krld.rtslibgdxplayground.eg.strats.SmartGuyStrategy;
 
 import java.util.Collections;
 import java.util.Map;
@@ -68,15 +68,15 @@ public class EpicGameGL extends ApplicationAdapter implements UIDelegate {
             Game game = new Game(world);
             Player player1 = new Player();
 
-            player1.setColor(Color.BLACK);
-            player1.setClassStategy(MyStrategy.class.getName());
+            player1.setColor(Color.GREEN);
+            player1.setClassStategy(QuickGuy6.class.getName());
 
             Player player2 = new Player();
 
             player2.setColor(Color.BLUE);
-            player2.setClassStategy(DummyStrategy.class.getName());
+            player2.setClassStategy(SmartGuyStrategy.class.getName());
 
-
+            //TODO easy way for adding players
             world.addPlayer(player1, 2, 2);
             world.addPlayer(player2, gameWidth - 2, gameHeight - 2);
 

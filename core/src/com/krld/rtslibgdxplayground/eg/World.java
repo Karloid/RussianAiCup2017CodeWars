@@ -34,10 +34,10 @@ public class World {
 
         initFreeCells();
 
-      /*  randomizeCells();
-        randomizeCells(); */
+        randomizeCells();
+        randomizeCells();
 
-        moves = new HashMap<Unit, Move>();
+        moves = new HashMap<>();
 
         this.uiDelegate = uiDelegate;
     }
