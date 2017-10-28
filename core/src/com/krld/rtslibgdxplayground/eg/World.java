@@ -10,13 +10,13 @@ public class World {
     public int height;
     public int width;
     public List<Player> players;
-    List<Unit> units;
+    public List<Unit> units;
     private UIDelegate uiDelegate;
     private int delayTurnMs;
     private Game game;
     private int moveCount;
     public Map<Unit, Move> moves;
-    protected List<Corpse> corpses;
+    public List<Corpse> corpses;
 
     public World(int width, int height, int spawnUnitCount, int cellSize, UIDelegate uiDelegate) {
         players = new ArrayList<Player>();

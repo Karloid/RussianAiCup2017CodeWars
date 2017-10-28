@@ -3,7 +3,10 @@ package com.krld.rtslibgdxplayground;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.graphics.*;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -52,7 +55,7 @@ public class EpicGameGL extends ApplicationAdapter implements UIDelegate {
         // Height is multiplied by aspect ratio.
         cam = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         cam.setToOrtho(true, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-
+        cam.zoom = 0.9f;
         cam.update();
     }
 
@@ -60,9 +63,9 @@ public class EpicGameGL extends ApplicationAdapter implements UIDelegate {
         new Thread(() -> {
             System.out.println("Starting...");
             // test github
-            gameWidth = 30;
-            gameHeight = 30;
-            int spawnUnitCount = 5;
+            gameWidth = 25;
+            gameHeight = 25;
+            int spawnUnitCount = 9;
             world = new World(gameWidth, gameHeight, spawnUnitCount, CELL_SIZE, this);
             Game game = new Game(world);
             Player player1 = new Player();
@@ -97,20 +100,24 @@ public class EpicGameGL extends ApplicationAdapter implements UIDelegate {
         Gdx.gl.glClearColor(0.95f, 0.95f, 0.95f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
+        batch.begin();
+        drawCorpses();
+        batch.end();
 
         g.begin(ShapeRenderer.ShapeType.Filled);
 
         drawTerrain();
-        drawCorpses();
         drawGrid();
-        drawUnits();
+        drawUnitsShape();
 
         drawMoves();
         drawDebug();
 
         g.end();
-
         batch.begin();
+
+        drawUnitsFont();
+
         font.draw(batch, "FPS: " + Gdx.graphics.getFramesPerSecond(), cam.position.x - (cam.viewportWidth * cam.zoom) / 2
                 , cam.position.y - (cam.viewportHeight * cam.zoom) / 2);
         //font.draw(batch, "0x0", 0, 0);
@@ -121,6 +128,22 @@ public class EpicGameGL extends ApplicationAdapter implements UIDelegate {
         drawScore();
         batch.end();
         isNotReady = false;
+    }
+
+    private void drawUnitsFont() {
+
+        for (Unit unit : world.units) {
+            font.setColor(unit.player.getInvertedColor());
+            String str = "";
+            if (unit.type == UnitType.SOLDIER) {
+                str = "S";
+            } else if (unit.type == UnitType.MEDIC) {
+                str = "M";
+            }
+
+            font.draw(batch, str, unit.x * CELL_SIZE + CELL_SIZE / 4, unit.y * CELL_SIZE /*+ CELL_SIZE*/);
+        }
+
     }
 
     private void drawDebug() {
@@ -141,11 +164,18 @@ public class EpicGameGL extends ApplicationAdapter implements UIDelegate {
 
     private void drawScore() {
         Collections.sort(world.players);
+
+
+        float topX = cam.position.x - (cam.viewportWidth * cam.zoom) / 2;
+        float topY = cam.position.y - (cam.viewportHeight * cam.zoom) / 2;
+
         int i = 1;
         for (Player player : world.players) {
             i++;
             font.setColor(player.getColor());
-            font.draw(batch, player.getClassStategy().substring(player.getClassStategy().lastIndexOf(".")) + " : " + player.score, 10, 30 * i);
+
+            font.draw(batch, player.getClassStategy().substring(player.getClassStategy().lastIndexOf(".")) +
+                    " : " + player.score, 10 + topX, 30 * i + topY);
         }
         font.setColor(com.badlogic.gdx.graphics.Color.BLACK);
         font.draw(batch, world.getMoveCount() + "", 10, world.getHeight() * CELL_SIZE - 30);
@@ -167,25 +197,36 @@ public class EpicGameGL extends ApplicationAdapter implements UIDelegate {
         int scaledHeight = world.height * CELL_SIZE;
         int scaledWidth = world.width * CELL_SIZE;
         for (int x = 0; x <= scaledWidth; x = x + CELL_SIZE) {
-            g.line(x, 0, x, scaledHeight);
+            g.rectLine(x, 0, x, scaledHeight, 1.1f);
         }
         for (int y = 0; y <= world.height * CELL_SIZE; y = y + CELL_SIZE) {
-            g.line(0, y, scaledWidth, y);
+            g.rectLine(0, y, scaledWidth, y, 1.1f);
         }
     }
 
-    private void drawUnits() {
-       /* g.setFont(new Font("Lucida Sans Typewriter", Font.BOLD, CELL_SIZE));
+    private void drawUnitsShape() {
         for (Unit unit : world.units) {
-            unit.draw(g, CELL_SIZE);
-        }*/
+            g.setColor(unit.player.getColor());
+            int hpBarHeight = (int) (((CELL_SIZE * 1f) / 100) * unit.hp);
+            //   System.out.println(" hpBarHeight" + hpBarHeight);
+            g.rect(unit.x * CELL_SIZE, unit.y * CELL_SIZE + CELL_SIZE - hpBarHeight, CELL_SIZE, hpBarHeight);
+        }
     }
 
     private void drawCorpses() {
-      /*  g.setFont(new Font("Lucida Sans Typewriter", Font.BOLD, CELL_SIZE));
         for (Corpse corpse : world.corpses) {
-            corpse.draw(g, CELL_SIZE);
-        }*/
+            Color newColor = new Color(corpse.player.getColor());
+            newColor.a = .5f;
+            font.setColor(newColor);
+            String str = "";
+            if (corpse.type == UnitType.SOLDIER) {
+                str = "S";
+            } else if (corpse.type == UnitType.MEDIC) {
+                str = "M";
+            }
+
+            font.draw(batch, str, corpse.x * CELL_SIZE + CELL_SIZE / 4, corpse.y * CELL_SIZE);
+        }
 
     }
 
@@ -197,21 +238,21 @@ public class EpicGameGL extends ApplicationAdapter implements UIDelegate {
                 g.setColor(Color.RED);
                 g.rect(move.getX() * CELL_SIZE + 2, move.getY() * CELL_SIZE + CELL_SIZE / 2 + 1, CELL_SIZE - 3, CELL_SIZE / 4);
                 g.setColor(unit.player.getColor());
-                g.rect(move.getX() * CELL_SIZE + CELL_SIZE / 2, move.getY() * CELL_SIZE + CELL_SIZE / 2, unit.getX() * CELL_SIZE + CELL_SIZE / 2, unit.getY() * CELL_SIZE + CELL_SIZE / 2);
+                g.line(move.getX() * CELL_SIZE + CELL_SIZE / 2, move.getY() * CELL_SIZE + CELL_SIZE / 2, unit.getX() * CELL_SIZE + CELL_SIZE / 2, unit.getY() * CELL_SIZE + CELL_SIZE / 2);
             } else if (move.getAction() == ActionType.HEAL) {
                 g.setColor(Color.GREEN);
                 com.krld.rtslibgdxplayground.eg.models.Point pointOnDirection = world.getPointOnDirection(new com.krld.rtslibgdxplayground.eg.models.Point(unit), move.getDirection());
-                g.rect(pointOnDirection.x * CELL_SIZE + 2, pointOnDirection.y * CELL_SIZE + CELL_SIZE / 2 - 1, CELL_SIZE - 3, CELL_SIZE / 4);
+                g.line(pointOnDirection.x * CELL_SIZE + 2, pointOnDirection.y * CELL_SIZE + CELL_SIZE / 2 - 1, CELL_SIZE - 3, CELL_SIZE / 4);
             }
         }
 
     }
 
     private void handleInput() {
-        if (Gdx.input.isKeyPressed(Input.Keys.A)) {
+        if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.PLUS)) {
             cam.zoom += 0.02;
         }
-        if (Gdx.input.isKeyPressed(Input.Keys.Q)) {
+        if (Gdx.input.isKeyPressed(Input.Keys.Q) || Gdx.input.isKeyPressed(Input.Keys.MINUS)) {
             cam.zoom -= 0.02;
         }
         if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
@@ -226,14 +267,14 @@ public class EpicGameGL extends ApplicationAdapter implements UIDelegate {
         if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
             cam.translate(0, 3, 0);
         }
-        if (Gdx.input.isKeyPressed(Input.Keys.W)) {
+       /* if (Gdx.input.isKeyPressed(Input.Keys.W)) {
             cam.rotate(-rotationSpeed, 0, 0, 1);
         }
         if (Gdx.input.isKeyPressed(Input.Keys.E)) {
             cam.rotate(rotationSpeed, 0, 0, 1);
-        }
+        }*/
 
-        cam.zoom = MathUtils.clamp(cam.zoom, 0.1f, WORLD_SIZE / cam.viewportWidth);
+        cam.zoom = MathUtils.clamp(cam.zoom, 0.05f, WORLD_SIZE / cam.viewportWidth);
 
         float effectiveViewportWidth = cam.viewportWidth * cam.zoom;
         float effectiveViewportHeight = cam.viewportHeight * cam.zoom;

@@ -8,8 +8,10 @@ public class Player implements Comparable<Player> {
     public Strategy strategy;
     private String classStategy;
     public int score;
+    private Color invertedColor;
 
     public void setColor(Color color) {
+        invertedColor = new Color(1 - color.r, 1 - color.g, 1 - color.b, 1);
         this.color = color;
     }
 
@@ -35,6 +37,10 @@ public class Player implements Comparable<Player> {
 
     @Override
     public int compareTo(Player o) {
-        return (score > o.score ? -1: 1);
+        return (score > o.score ? -1 : 1);
+    }
+
+    public Color getInvertedColor() {
+        return invertedColor;
     }
 }

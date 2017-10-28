@@ -9,8 +9,8 @@ public class Unit {
     public int y;
     public int x;
     private static int currentId = 0;
-    private int hp;
-    protected UnitType type;
+    public int hp;
+    public UnitType type;
 
     public Unit(int x, int y, Player player, UnitType type) {
         this.id = currentId++;
