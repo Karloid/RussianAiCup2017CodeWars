@@ -1,12 +1,10 @@
 package com.krld.rtslibgdxplayground.eg;
 
 import javax.swing.*;
-import java.awt.*;
-import java.util.Collections;
-import java.util.Map;
 
 
 public class MyFrame extends JFrame {
+/*
     private static int cellSize;
     public static final int Y_OFFSET = 25;
     public static final int X_OFFSET = 5;
@@ -38,18 +36,20 @@ public class MyFrame extends JFrame {
 
     private void drawDebug(Graphics g) {
 
-      /*  g.setColor(Color.GRAY);
+      */
+/*  g.setColor(Color.GRAY);
         for (int x = 0; x < world.getWidth(); x++) {
             for (int y = 0; y < world.getHeight(); y++) {
                 if ((!world.units.get(1).getStrategy()).available[x][y]) {
                     g.setColor(Color.YELLOW);
-                    g.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                    g.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
                 }
                 g.setColor(Color.GRAY);
-                g.drawString(strategy.path[x][y] + " ", x * cellSize + cellSize / 3, y * cellSize + cellSize / 2);
+                g.drawString(strategy.path[x][y] + " ", x * CELL_SIZE + CELL_SIZE / 3, y * CELL_SIZE + CELL_SIZE / 2);
             }
             //     System.out.println();
-        }       */
+        }       *//*
+
     }
 
     private void drawScore(Graphics g) {
@@ -132,10 +132,11 @@ public class MyFrame extends JFrame {
                 g.drawLine(move.getX() * cellSize + cellSize / 2, move.getY() * cellSize + cellSize / 2, unit.getX() * cellSize + cellSize / 2, unit.getY() * cellSize + cellSize / 2);
             } else if (move.getAction() == ActionType.HEAL) {
                 g.setColor(Color.GREEN);
-                Point pointOnDirection = world.getPointOnDirection(new Point(unit), move.getDirection());
+                com.krld.rtslibgdxplayground.eg.models.Point pointOnDirection = world.getPointOnDirection(new com.krld.rtslibgdxplayground.eg.models.Point(unit), move.getDirection());
                 g.fillRect(pointOnDirection.x * cellSize + 2, pointOnDirection.y * cellSize + cellSize / 2 - 1, cellSize - 3, cellSize / 4);
             }
         }
 
     }
+*/
 }

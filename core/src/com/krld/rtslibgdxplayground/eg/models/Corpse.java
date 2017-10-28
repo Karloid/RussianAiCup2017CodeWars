@@ -1,4 +1,4 @@
-package com.krld.rtslibgdxplayground.eg;
+package com.krld.rtslibgdxplayground.eg.models;
 
 import java.awt.*;
 
@@ -13,6 +13,7 @@ public class Corpse extends Unit {
 
     @Override
     public void draw(Graphics g, int cellSize) {
+/*
       //  System.out.println(player.getColor().getRed() + "");
         g.setColor(new Color(player.getColor().getRed() / 255f, player.getColor().getGreen() / 255f, player.getColor().getBlue() / 255f, 0.5f));
         String str = "";
@@ -23,5 +24,6 @@ public class Corpse extends Unit {
         }
 
         g.drawString(str, x * cellSize + cellSize / 4, y * cellSize + cellSize);
+*/
     }
 }

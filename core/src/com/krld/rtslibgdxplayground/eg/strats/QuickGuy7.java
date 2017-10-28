@@ -1,15 +1,18 @@
-package com.krld.rtslibgdxplayground.eg;
+package com.krld.rtslibgdxplayground.eg.strats;
 
+
+import com.krld.rtslibgdxplayground.eg.*;
+import com.krld.rtslibgdxplayground.eg.models.*;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.krld.rtslibgdxplayground.eg.Direction.*;
 
+import static com.krld.rtslibgdxplayground.eg.models.Direction.*;
 
-public class QuickGuy6 implements Strategy {
+public class QuickGuy7 implements Strategy {
     public static final int MAX_PATH = 999;
     public static final int DISTANCE_TO_WAYPOINT = 5;
     private static final int SELF_MEDIC_MAX_HP = 100;
@@ -149,7 +152,7 @@ public class QuickGuy6 implements Strategy {
         if (self.getType() == UnitType.MEDIC) {
             if (self.getHp() < SELF_MEDIC_MAX_HP) {
                 move.setAction(ActionType.HEAL);
-                move.setDirection(CURRENT_CELL);
+                move.setDirection(Direction.CURRENT_CELL);
                 //    Game.log(self.player.getClassStategy() + "medic heals!");
                 return true;
             }
@@ -158,15 +161,15 @@ public class QuickGuy6 implements Strategy {
             for (Unit unit : units) {
                 if (unit.isTeamatte(self) && unit != self) {
                     if (unit.getHp() < game.getMaximumHP() && world.getDistance(self, unit) == 1) {
-                        Direction direction = CURRENT_CELL;
+                        Direction direction = Direction.CURRENT_CELL;
                         if (unit.getX() > self.getX()) {
-                            direction = EAST;
+                            direction = Direction.EAST;
                         } else if (unit.getX() < self.getX()) {
-                            direction = WEST;
+                            direction = Direction.WEST;
                         } else if (unit.getY() < self.getY()) {
-                            direction = NORTH;
+                            direction = Direction.NORTH;
                         } else if (unit.getY() > self.getY()) {
-                            direction = SOUTH;
+                            direction = Direction.SOUTH;
                         }
                         move.setAction(ActionType.HEAL);
                         move.setDirection(direction);

@@ -1,15 +1,20 @@
-package com.krld.rtslibgdxplayground.eg;
+package com.krld.rtslibgdxplayground.eg.strats;
 
+
+import com.krld.rtslibgdxplayground.eg.*;
+import com.krld.rtslibgdxplayground.eg.models.*;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.krld.rtslibgdxplayground.eg.Direction.*;
+
+import static com.krld.rtslibgdxplayground.eg.models.Direction.*;
 
 
-public class QuickGuy2 implements Strategy {
+
+public class QuickGuy1 implements Strategy {
     public static final int MAX_PATH = 999;
     public static final int DISTANCE_TO_WAYPOINT = 5;
     private static final int SELF_MEDIC_MAX_HP = 100;

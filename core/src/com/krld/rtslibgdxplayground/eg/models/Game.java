@@ -1,5 +1,7 @@
-package com.krld.rtslibgdxplayground.eg;
+package com.krld.rtslibgdxplayground.eg.models;
 
+
+import com.krld.rtslibgdxplayground.eg.World;
 
 public class Game {
     private World world;

@@ -19,8 +19,8 @@ public class Starter {
         width = 30;
         height = 30;
         int spawnUnitCount = 5;
-        int cellSize = 16;
-        World world = new World(width, height, spawnUnitCount, cellSize);
+        int CELL_SIZE = 16;
+        World world = new World(width, height, spawnUnitCount, CELL_SIZE);
         Game game = new Game(world);
         Player player1 = new Player();
 

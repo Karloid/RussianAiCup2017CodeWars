@@ -1,6 +1,7 @@
-package com.krld.rtslibgdxplayground.eg;
+package com.krld.rtslibgdxplayground.eg.models;
 
-import java.awt.*;
+
+import com.badlogic.gdx.graphics.Color;
 
 public class Player implements Comparable<Player> {
     private Color color;

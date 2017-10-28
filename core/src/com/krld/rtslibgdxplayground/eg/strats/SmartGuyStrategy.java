@@ -1,14 +1,18 @@
-package com.krld.rtslibgdxplayground.eg;
+package com.krld.rtslibgdxplayground.eg.strats;
+
+
+import com.krld.rtslibgdxplayground.eg.*;
+import com.krld.rtslibgdxplayground.eg.models.*;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.krld.rtslibgdxplayground.eg.Direction.*;
+import static com.krld.rtslibgdxplayground.eg.models.Direction.*;
 
 
-public class QuickGuy4 implements Strategy {
+public class SmartGuyStrategy implements Strategy {
     public static final int MAX_PATH = 999;
     public static final int DISTANCE_TO_WAYPOINT = 5;
     private static final int SELF_MEDIC_MAX_HP = 100;
@@ -189,7 +193,7 @@ public class QuickGuy4 implements Strategy {
             }
             if (unitToHeal != null) {
                 move.setAction(ActionType.MOVE);
-                moveReal(new Point(unitToHeal), 0, 0, false, true);
+                moveReal(new Point(unitToHeal),0,0,false, true);
           //      log("move to heal target");
                 return true;
             }

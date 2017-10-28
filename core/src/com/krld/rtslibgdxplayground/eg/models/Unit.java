@@ -1,4 +1,4 @@
-package com.krld.rtslibgdxplayground.eg;
+package com.krld.rtslibgdxplayground.eg.models;
 
 import java.awt.*;
 
@@ -36,6 +36,7 @@ public class Unit {
     }
 
     public void draw(Graphics g, int cellSize) {
+/*
         g.setColor(player.getColor());
         int hpBarHeight = (int) (((cellSize * 1f) / 100) * hp);
         //   System.out.println(" hpBarHeight" + hpBarHeight);
@@ -49,6 +50,7 @@ public class Unit {
         }
 
         g.drawString(str, x * cellSize + cellSize / 4, y * cellSize + cellSize);
+*/
     }
 
     public Strategy getStrategy() {

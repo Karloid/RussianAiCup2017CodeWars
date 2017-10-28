@@ -1,4 +1,7 @@
-package com.krld.rtslibgdxplayground.eg;
+package com.krld.rtslibgdxplayground.eg.strats;
+
+import com.krld.rtslibgdxplayground.eg.*;
+import com.krld.rtslibgdxplayground.eg.models.*;
 
 import java.util.List;
 

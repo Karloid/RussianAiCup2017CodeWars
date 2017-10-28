@@ -1,4 +1,4 @@
-package com.krld.rtslibgdxplayground.eg;
+package com.krld.rtslibgdxplayground.eg.models;
 
 
 public class Move {

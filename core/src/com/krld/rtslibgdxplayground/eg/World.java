@@ -1,13 +1,15 @@
 package com.krld.rtslibgdxplayground.eg;
 
+import com.krld.rtslibgdxplayground.eg.models.*;
+
 import java.util.*;
 
 public class World {
     private final int spawnUnitCount;
     private CellType[][] cells;
-    int height;
-    int width;
-    List<Player> players;
+    public int height;
+    public int width;
+    public List<Player> players;
     List<Unit> units;
     private UIDelegate uiDelegate;
     private int delayTurnMs;
@@ -196,7 +198,7 @@ public class World {
     }
 
 
-    void update() {
+    public void update() {
         moveCount++;
         long startUpdate = System.currentTimeMillis();
         long seed = System.nanoTime();
