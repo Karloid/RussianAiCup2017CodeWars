@@ -1,64 +1,78 @@
-import java.io.PrintWriter;
+import java.awt.Color;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.Socket;
 
+
+/**
+ * Java client for Rewind viewer. Put this file to the same default package where Strategy/MyStrategy/Runner and other
+ * files are extracted.
+ * <p>
+ * Sample usage:
+ * <pre>
+ * {@code
+ *
+ *  private final RewindClient rewindClient = new RewindClient();
+ *
+ *  @Override
+ *  public void move(Wizard self, World world, Game game, Move move) {
+ *      initializeTick(self, world, game, move);
+ *      for (Wizard w : world.getWizards()) {
+ *          RewindClient.Side side = w.getFaction() == self.getFaction() ? RewindClient.Side.OUR : RewindClient.Side.ENEMY;
+ *          rewindClient.livingUnit(w.getId(), w.getX(), w.getY(), w.getRadius(), w.getLife(), w.getMaxLife(), side);
+ *      }
+ *      ...
+ *      rewindClient.endFrame();
+ *  }
+ * }
+ * </pre>
+ */
 public class RewindClient {
 
-    private Socket socket;
-    private PrintWriter out;
+    private final Socket socket;
+    private final OutputStream outputStream;
 
-    public RewindClient(String host, int port) {
-        try {
-            socket = new Socket(host, port);
-            out = new PrintWriter(socket.getOutputStream(), true);
-        } catch (Exception e) {
-            e.printStackTrace();
+    public enum Side {
+        OUR(-1),
+        NEUTRAL(0),
+        ENEMY(1);
+        final int side;
+
+        Side(int side) {
+            this.side = side;
         }
     }
 
     /**
-     * Should be send on end of move function
-     * all turn primitives can be rendered after that point
+     * Should be send on end of move function all turn primitives can be rendered after that point
      */
-    public void endFrame() {
+    void endFrame() {
         send("{\"type\":\"end\"}");
     }
 
-    public void circle(double x, double y, double r, int color) {
-        String fmt =
-                "{\"type\": \"circle\", \"x\": %f, \"y\": %f, \"r\": %f, \"color\": %o})";
-        send(String.format(fmt, x, y, r, color));
+    void circle(double x, double y, double r, Color color) {
+        send(String.format("{\"type\": \"circle\", \"x\": %f, \"y\": %f, \"r\": %f, \"color\": %d}", x, y, r, color.getRGB()));
     }
 
-    public void rect(double x1, double y1, double x2, double y2, int color) {
-        String fmt =
-                "{\"type\": \"rectangle\", \"x1\": %f, \"y1\": %f, \"x2\": %f, \"y2\": %f, \"color\": %o}";
-        send(String.format(fmt, x1, y1, x2, y2, color));
+    void rect(double x1, double y1, double x2, double y2, Color color) {
+        send(String.format("{\"type\": \"rectangle\", \"x1\": %f, \"y1\": %f, \"x2\": %f, \"y2\": %f, \"color\": %d}", x1, y1, x2, y2, color.getRGB()));
     }
 
-    public void line(double x1, double y1, double x2, double y2, int color) {
-        String fmt =
-                "{\"type\": \"line\", \"x1\": %f, \"y1\": %f, \"x2\": %f, \"y2\": %f, \"color\": %o}";
-        send(String.format(fmt, x1, y1, x2, y2, color));
+    void line(double x1, double y1, double x2, double y2, Color color) {
+        send(String.format("{\"type\": \"line\", \"x1\": %f, \"y1\": %f, \"x2\": %f, \"y2\": %f, \"color\": %d}", x1, y1, x2, y2, color.getRGB()));
     }
 
+    void livingUnit(double x, double y, double r, int hp, int maxHp,
+                    Side side) {
+        livingUnit(x, y, r, hp, maxHp, side, 0, 0);
+    }
 
-    /**
-     * Living unit - circle with HP bar
-     *
-     * @param x .
-     * @param y .
-     * @param r .
-     * @param hp     current life level
-     * @param max_hp maximum life level
-     * @param enemy  3 state variable: 1 - for enemy; -1 - for friend; 0 - neutral.
-     * @param course parameter needed only to properly rotate textures (it unused by untextured units)
-     * @param utype  define used texture, value 0 means 'no texture'. For supported textures see enum UnitType in Frame.h
-     */
-    public void livingUnit(double x, double y, double r, int hp, int max_hp, int enemy, double course, int utype) {
-        String fmt =
-                "{\"type\": \"unit\", \"x\": %f, \"y\": %f, \"r\": %f, \"hp\": %o, \"max_hp\": %o, \"enemy\": %o," +
-                        " \"unit_type\":%o, \"course\": %.3f}";
-        send(String.format(fmt, x, y, r, hp, max_hp, enemy, utype, course));
+    void close() {
+        try {
+            outputStream.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -73,32 +87,44 @@ public class RewindClient {
         send(s);
     }
 
-    private void send(String s) {
-        out.println(s);
+    /**
+     * @param x        - x pos of the unit
+     * @param y        - y pos of the unit
+     * @param r        - radius of the unit
+     * @param hp       - current health
+     * @param maxHp    - max possible health
+     * @param side     - owner of the unit
+     * @param course   rotation of the unit - angle in radians [0, 2 * pi) counter clockwise
+     * @param unitType - id of unit type (see UnitType enum: https://github.com/kswaldemar/rewind-viewer/blob/master/src/viewer/Frame.h)
+     *                 to set texture
+     */
+    void livingUnit(double x, double y, double r, int hp, int maxHp,
+                    Side side, double course, int unitType) {
+        send(String.format(
+                "{\"type\": \"unit\", \"x\": %f, \"y\": %f, \"r\": %f, \"hp\": %d, \"max_hp\": %d, \"enemy\": %d, \"unit_type\":%d, \"course\": %.3f}",
+                x, y, r, hp, maxHp, side.side, unitType, course));
     }
 
-    public void close() {
+    public RewindClient(String host, int port) {
         try {
-            socket.close();
-        } catch (Exception e) {
-            e.printStackTrace();
+            socket = new Socket(host, port);
+            socket.setTcpNoDelay(true);
+            outputStream = socket.getOutputStream();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    /**
-     * Example of usage
-     *
-     * @param args
-     */
-    public static void main(String[] args) {
-        RewindClient rc = new RewindClient("localhost", 7000);
+    public RewindClient() {
+        this("127.0.0.1", 7000);
+    }
 
-        rc.circle(10, 10, 10, 0xffffaa);
-        rc.rect(0.3, 0.5, 15, 33, 0xffaaff);
-        rc.line(0.3, 0.5, 15, 33, 0xffaaff);
-        rc.livingUnit(50, 100, 15, 33, 100, 1, 0.6, 0);
-        rc.message("test");
-        rc.endFrame();
-        rc.close();
+    private void send(String buf) {
+        try {
+            outputStream.write(buf.getBytes());
+            outputStream.flush();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
