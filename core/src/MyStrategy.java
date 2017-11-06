@@ -120,30 +120,34 @@ public final class MyStrategy implements Strategy {
                 }
 
                 // ... получаем центр формации ...
-                double x = streamVehicles(
-                        Ownership.ALLY, vehicleType
-                ).mapToDouble(Vehicle::getX).average().orElse(Double.NaN);
+                double x = streamVehicles(Ownership.ALLY, vehicleType)
+                        .mapToDouble(Vehicle::getX)
+                        .average()
+                        .orElse(Double.NaN);
 
-                double y = streamVehicles(
-                        Ownership.ALLY, vehicleType
-                ).mapToDouble(Vehicle::getY).average().orElse(Double.NaN);
+                double y = streamVehicles(Ownership.ALLY, vehicleType)
+                        .mapToDouble(Vehicle::getY)
+                        .average()
+                        .orElse(Double.NaN);
 
                 // ... получаем центр формации противника или центр мира ...
-                double targetX = streamVehicles(
-                        Ownership.ENEMY, targetType
-                ).mapToDouble(Vehicle::getX).average().orElseGet(
-                        () -> streamVehicles(
-                                Ownership.ENEMY
-                        ).mapToDouble(Vehicle::getX).average().orElse(world.getWidth() / 2.0D)
-                );
+                double targetX = streamVehicles(Ownership.ENEMY, targetType)
+                        .mapToDouble(Vehicle::getX)
+                        .average()
+                        .orElseGet(() -> streamVehicles(Ownership.ENEMY)
+                                .mapToDouble(Vehicle::getX)
+                                .average()
+                                .orElse(world.getWidth() / 2.0D)
+                        );
 
-                double targetY = streamVehicles(
-                        Ownership.ENEMY, targetType
-                ).mapToDouble(Vehicle::getY).average().orElseGet(
-                        () -> streamVehicles(
-                                Ownership.ENEMY
-                        ).mapToDouble(Vehicle::getY).average().orElse(world.getHeight() / 2.0D)
-                );
+                double targetY = streamVehicles(Ownership.ENEMY, targetType)
+                        .mapToDouble(Vehicle::getY)
+                        .average()
+                        .orElseGet(() -> streamVehicles(Ownership.ENEMY)
+                                .mapToDouble(Vehicle::getY)
+                                .average()
+                                .orElse(world.getHeight() / 2.0D)
+                        );
 
                 // .. и добавляем в очередь отложенные действия для выделения и перемещения техники.
                 if (!Double.isNaN(x) && !Double.isNaN(y)) {
@@ -163,13 +167,15 @@ public final class MyStrategy implements Strategy {
             }
 
             // Также находим центр формации наших БРЭМ ...
-            double x = streamVehicles(
-                    Ownership.ALLY, VehicleType.ARRV
-            ).mapToDouble(Vehicle::getX).average().orElse(Double.NaN);
+            double x = streamVehicles(Ownership.ALLY, VehicleType.ARRV)
+                    .mapToDouble(Vehicle::getX)
+                    .average()
+                    .orElse(Double.NaN);
 
-            double y = streamVehicles(
-                    Ownership.ALLY, VehicleType.ARRV
-            ).mapToDouble(Vehicle::getY).average().orElse(Double.NaN);
+            double y = streamVehicles(Ownership.ALLY, VehicleType.ARRV)
+                    .mapToDouble(Vehicle::getY)
+                    .average()
+                    .orElse(Double.NaN);
 
             // .. и отправляем их в центр мира.
             if (!Double.isNaN(x) && !Double.isNaN(y)) {
