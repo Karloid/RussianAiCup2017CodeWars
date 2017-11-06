@@ -1,12 +1,12 @@
 import java.io.PrintWriter;
 import java.net.Socket;
 
-public class RewindClient {
+public class RewindClientMy {
 
     private Socket socket;
     private PrintWriter out;
 
-    public RewindClient(String host, int port) {
+    public RewindClientMy(String host, int port) {
         try {
             socket = new Socket(host, port);
             out = new PrintWriter(socket.getOutputStream(), true);
@@ -92,7 +92,7 @@ public class RewindClient {
      * @param args
      */
     public static void main(String[] args) {
-        RewindClient rc = new RewindClient("localhost", 7000);
+        RewindClientMy rc = new RewindClientMy("localhost", 21000);
 
         for (int i = 0; i < 200; i++) {
             try {
