@@ -60,6 +60,7 @@ public class EpicGameGL extends ApplicationAdapter implements UIDelegate {
     }
 
     private void startGameStuff() {
+
         CountDownLatch cdl = new CountDownLatch(1);
         new Thread(() -> {
             System.out.println("Starting...");
