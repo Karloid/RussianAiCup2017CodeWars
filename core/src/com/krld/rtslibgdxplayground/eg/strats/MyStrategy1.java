@@ -5,7 +5,7 @@ import com.krld.rtslibgdxplayground.eg.models.*;
 
 import java.util.List;
 
-public class MyStrategy implements Strategy {
+public class MyStrategy1 implements Strategy {
     private World world;
     private Game game;
     private Move move;

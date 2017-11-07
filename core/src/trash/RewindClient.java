@@ -7,7 +7,7 @@ import java.net.Socket;
 
 
 /**
- * Java client for Rewind viewer. Put this file to the same default package where model.Strategy/MyStrategy/model.Runner and other
+ * Java client for Rewind viewer. Put this file to the same default package where model.Strategy/MyStrategy1/Runner and other
  * files are extracted.
  * <p>
  * Sample usage:

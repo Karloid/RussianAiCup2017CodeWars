@@ -25,7 +25,7 @@ public class Starter {
         Player player1 = new Player();
 
         player1.setColor(Color.RED);
-        player1.setClassStategy("MyStrategy");
+        player1.setClassStategy("MyStrategy1");
 
         Player player2 = new Player();
 

@@ -4,6 +4,8 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import static model.VehicleType.*;
+
 @SuppressWarnings({"UnsecureRandomNumberGeneration", "FieldCanBeLocal", "unused", "OverlyLongMethod"})
 public final class MyStrategy implements Strategy {
     private static int constantId;
@@ -24,15 +26,8 @@ public final class MyStrategy implements Strategy {
     private final Map<Long, Vehicle> vehicleById = new HashMap<>();
     private final Map<Long, Integer> updateTickByVehicleId = new HashMap<>();
     private final Queue<Consumer<Move>> delayedMoves = new ArrayDeque<>();
+    private Point2D centerPoint;
 
-    /**
-     * Основной метод стратегии, осуществляющий управление армией. Вызывается каждый тик.
-     *
-     * @param me    Информация о вашем игроке.
-     * @param world Текущее состояние мира.
-     * @param game  Различные игровые константы.
-     * @param move  Результатом работы метода является изменение полей данного объекта.
-     */
     @Override
     public void move(Player me, World world, Game game, Move move) {
         initializeStrategy(world, game);
@@ -43,33 +38,33 @@ public final class MyStrategy implements Strategy {
         }
 
         if (executeDelayedMove()) {
+            delayedMovesSize();
             return;
         }
 
         move();
 
         executeDelayedMove();
+        delayedMovesSize();
     }
 
-    /**
-     * Инциализируем стратегию.
-     * <p>
-     * Для этих целей обычно можно использовать конструктор, однако в данном случае мы хотим инициализировать генератор
-     * случайных чисел значением, полученным от симулятора игры.
-     */
+    private void delayedMovesSize() {
+        if (!delayedMoves.isEmpty()) {
+            log("Delayed moves: " + delayedMoves.size());
+        }
+    }
+
     private void initializeStrategy(World world, Game game) {
         if (random == null) {
             random = new Random(game.getRandomSeed());
 
             terrainTypeByCellXY = world.getTerrainByCellXY();
             weatherTypeByCellXY = world.getWeatherByCellXY();
+
+            centerPoint = new Point2D(world.getWidth() / 2, world.getHeight() / 2);
         }
     }
 
-    /**
-     * Сохраняем все входные данные в полях класса для упрощения доступа к ним, а также актуализируем сведения о каждой
-     * технике и времени последнего изменения её состояния.
-     */
     private void initializeTick(Player me, World world, Game game, Move move) {
         this.me = me;
         this.world = world;
@@ -114,120 +109,127 @@ public final class MyStrategy implements Strategy {
      */
     private void move() {
         // Каждые 300 тиков ...
-        if (world.getTickIndex() % 300 == 0) {
-            // ... для каждого типа техники ...
-            for (VehicleType vehicleType : VehicleType.values()) {
-                VehicleType targetType = getPreferredTargetType(vehicleType);
+        // ... для каждого типа техники ...
+        log("Schedule new moves");
 
-                // ... если этот тип может атаковать ...
-                if (targetType == null) {
-                    continue;
-                }
+        List<VehicleGroupInfo> enemyGroups = getGroups(Ownership.ENEMY);
+        List<VehicleGroupInfo> myGroups = getGroups(Ownership.ALLY);
 
-                // ... получаем центр формации ...
-                double x = streamVehicles(Ownership.ALLY, vehicleType)
-                        .mapToDouble(Vehicle::getX)
-                        .average()
-                        .orElse(Double.NaN);
+        for (VehicleGroupInfo myGroup : myGroups) {
+         /*   if (myGroup.vehicleType != FIGHTER) {
+                continue;
+            }*/
 
-                double y = streamVehicles(Ownership.ALLY, vehicleType)
-                        .mapToDouble(Vehicle::getY)
-                        .average()
-                        .orElse(Double.NaN);
+         /*   if (myGroup.vehicleType == ARRV && world.getTickIndex() % 2 == 0) {
+                continue;
+            }*/
+            List<VehicleType> targetType = getPreferredTargetType(myGroup.vehicleType);
+            VehicleGroupInfo enemyGroup = priorityFilter(enemyGroups, targetType);
+            if (enemyGroup == null) {
+                selectAll(myGroup.vehicleType);
 
-                // ... получаем центр формации противника или центр мира ...
-                double targetX = streamVehicles(Ownership.ENEMY, targetType)
-                        .mapToDouble(Vehicle::getX)
-                        .average()
-                        .orElseGet(() -> streamVehicles(Ownership.ENEMY)
-                                .mapToDouble(Vehicle::getX)
-                                .average()
-                                .orElse(world.getWidth() / 2.0D)
-                        );
+                Point2D point = this.centerPoint;
+                moveToPoint(myGroup, point);
+            } else {
+                selectAll(myGroup.vehicleType);
 
-                double targetY = streamVehicles(Ownership.ENEMY, targetType)
-                        .mapToDouble(Vehicle::getY)
-                        .average()
-                        .orElseGet(() -> streamVehicles(Ownership.ENEMY)
-                                .mapToDouble(Vehicle::getY)
-                                .average()
-                                .orElse(world.getHeight() / 2.0D)
-                        );
-
-                // .. и добавляем в очередь отложенные действия для выделения и перемещения техники.
-                if (!Double.isNaN(x) && !Double.isNaN(y)) {
-                    delayedMoves.add(move -> {
-                        move.setAction(ActionType.CLEAR_AND_SELECT);
-                        move.setRight(world.getWidth());
-                        move.setBottom(world.getHeight());
-                        move.setVehicleType(vehicleType);
-                    });
-
-                    delayedMoves.add(move -> {
-                        move.setAction(ActionType.MOVE);
-                        move.setX(targetX - x);
-                        move.setY(targetY - y);
-                    });
-                }
-            }
-
-            // Также находим центр формации наших БРЭМ ...
-            double x = streamVehicles(Ownership.ALLY, VehicleType.ARRV)
-                    .mapToDouble(Vehicle::getX)
-                    .average()
-                    .orElse(Double.NaN);
-
-            double y = streamVehicles(Ownership.ALLY, VehicleType.ARRV)
-                    .mapToDouble(Vehicle::getY)
-                    .average()
-                    .orElse(Double.NaN);
-
-            // .. и отправляем их в центр мира.
-            if (!Double.isNaN(x) && !Double.isNaN(y)) {
+                Point2D movePoint = enemyGroup.averagePoint;
+                movePoint = normalize(movePoint);
+                Point2D finalMovePoint = movePoint;
                 delayedMoves.add(move -> {
-                    move.setAction(ActionType.CLEAR_AND_SELECT);
-                    move.setRight(world.getWidth());
-                    move.setBottom(world.getHeight());
-                    move.setVehicleType(VehicleType.ARRV);
-                });
-
-                delayedMoves.add(move -> {
-                    double x2 = world.getWidth() / 2.0D;
-                    double y2 = world.getHeight() / 2.0D;
-
-                    x2 = streamVehicles(Ownership.ALLY)
-                            .filter(vehicle -> vehicle.getType() != VehicleType.ARRV)
-                            .mapToDouble(Unit::getX)
-                            .average().orElse(x2);
-                    y2 = streamVehicles(Ownership.ALLY)
-                            .filter(vehicle -> vehicle.getType() != VehicleType.ARRV)
-                            .mapToDouble(Unit::getY)
-                            .average().orElse(y2);
                     move.setAction(ActionType.MOVE);
-                    move.setX(x2);
-                    move.setY(y2);
+                    move.setX(finalMovePoint.getX() - myGroup.averagePoint.getX());
+                    move.setY(finalMovePoint.getY() - myGroup.averagePoint.getY());
+                    log("move to point " + finalMovePoint.toString() + " group " + myGroup + " dist: " +
+                            Utils.format(finalMovePoint.getDistanceTo(myGroup.averagePoint)));
                 });
             }
-
-            return;
         }
 
+        /*if (true) {
+            return;
+        }*/
         // Если ни один наш юнит не мог двигаться в течение 60 тиков ...
-        if (streamVehicles(Ownership.ALLY).allMatch(
-                vehicle -> world.getTickIndex() - updateTickByVehicleId.get(vehicle.getId()) > 60
-        )) {
+        long allUnits = streamVehicles(Ownership.ALLY).count();
+        float notUpdatedUnits = streamVehicles(Ownership.ALLY).filter(vehicle -> world.getTickIndex() - updateTickByVehicleId.get(vehicle.getId()) > 60).count() * 1f;
+        if (notUpdatedUnits / allUnits > 0.5) {
             /// ... находим центр нашей формации ...
-            double x = streamVehicles(Ownership.ALLY).mapToDouble(Vehicle::getX).average().orElse(Double.NaN);
-            double y = streamVehicles(Ownership.ALLY).mapToDouble(Vehicle::getY).average().orElse(Double.NaN);
+            log("We stuck " + notUpdatedUnits);
+            VehicleGroupInfo group = getGroup(Ownership.ALLY, null);
+            delayedMoves.clear();
+            selectAll(null);
+            moveToPoint(group, centerPoint);
+        }
+    }
 
-            // ... и поворачиваем её на случайный угол.
-            if (!Double.isNaN(x) && !Double.isNaN(y)) {
-                move.setAction(ActionType.ROTATE);
-                move.setX(x);
-                move.setY(y);
-                move.setAngle(random.nextBoolean() ? StrictMath.PI : -StrictMath.PI);
+    private Point2D normalize(Point2D movePoint) {
+        double x = movePoint.getX();
+        double y = movePoint.getY();
+        int padding = 100;
+        x = Math.min(x, world.getWidth() - padding);
+        x = Math.max(x, padding);
+
+        y = Math.min(y, world.getHeight() - padding);
+        y = Math.max(y, padding);
+        Point2D p = new Point2D(x, y);
+        return p;
+    }
+
+    private void moveToPoint(VehicleGroupInfo myGroup, Point2D point) {
+        delayedMoves.add(move -> {
+            move.setAction(ActionType.MOVE);
+            move.setX(point.getX() - myGroup.averagePoint.getX());
+            move.setY(point.getY() - myGroup.averagePoint.getY());
+            log("move to point " + point + " group " + myGroup);
+        });
+    }
+
+    private boolean selectAll(VehicleType type) {
+        return delayedMoves.add(move -> {
+            move.setAction(ActionType.CLEAR_AND_SELECT);
+            move.setRight(world.getWidth());
+            move.setBottom(world.getHeight());
+            move.setVehicleType(type);
+        });
+    }
+
+    private void log(String s) {
+        System.out.println(world.getTickIndex() + ": " + s);
+    }
+
+    private VehicleGroupInfo priorityFilter(List<VehicleGroupInfo> enemyGroups, List<VehicleType> targetType) {
+        for (VehicleType vehicleType : targetType) {
+            for (VehicleGroupInfo enemyGroup : enemyGroups) {
+                if (enemyGroup.vehicleType == vehicleType) {
+                    return enemyGroup;
+                }
             }
         }
+        return null;
+    }
+
+    private List<VehicleGroupInfo> getGroups(Ownership ownership) {
+        List<VehicleGroupInfo> groups = new ArrayList<>();
+
+        for (VehicleType vehicleType : values()) {
+            VehicleGroupInfo info = getGroup(ownership, vehicleType);
+            if (info.count > 0) {
+                groups.add(info);
+            }
+        }
+        return groups;
+    }
+
+    private VehicleGroupInfo getGroup(Ownership ownership, VehicleType vehicleType) {
+        VehicleGroupInfo info = new VehicleGroupInfo(vehicleType);
+        Point2D averagePoint = streamVehicles(ownership, vehicleType)
+                .map(vehicle -> {
+                    info.count++;
+                    return new Point2D(vehicle.getX(), vehicle.getY());
+                })
+                .collect(Utils.POINT_COLLECTOR);
+        info.averagePoint = averagePoint;
+        return info;
     }
 
     /**
@@ -237,18 +239,18 @@ public final class MyStrategy implements Strategy {
      * @param vehicleType Тип техники.
      * @return Тип техники в качестве приоритетной цели.
      */
-    private static VehicleType getPreferredTargetType(VehicleType vehicleType) {
+    private static List<VehicleType> getPreferredTargetType(VehicleType vehicleType) {
         switch (vehicleType) {
             case FIGHTER:
-                return VehicleType.HELICOPTER;
+                return Arrays.asList(HELICOPTER, FIGHTER);
             case HELICOPTER:
-                return VehicleType.TANK;
+                return Arrays.asList(TANK, ARRV, HELICOPTER, IFV, FIGHTER);
             case IFV:
-                return VehicleType.HELICOPTER;
+                return Arrays.asList(HELICOPTER, FIGHTER, IFV, ARRV, TANK);
             case TANK:
-                return VehicleType.IFV;
+                return Arrays.asList(IFV, TANK, ARRV, HELICOPTER, FIGHTER);
             default:
-                return null;
+                return Collections.emptyList();
         }
     }
 
@@ -287,9 +289,7 @@ public final class MyStrategy implements Strategy {
 
     private enum Ownership {
         ANY,
-
         ALLY,
-
         ENEMY
     }
 }

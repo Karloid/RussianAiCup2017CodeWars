@@ -15,12 +15,11 @@ public final class Point2D {
     @Override
     public String toString() {
         return
-                "x=" + x +
-                        ", y=" + y +
-                        ", v=" + val;
+                "x=" + Utils.format(x)+
+                        ", y=" + Utils.format(y);
     }
 
-    private Point2D(double x, double y) {
+    Point2D(double x, double y) {
         this.x = x;
         this.y = y;
         val = 0;
