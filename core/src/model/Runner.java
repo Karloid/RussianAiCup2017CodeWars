@@ -1,4 +1,4 @@
-import model.*;
+package model;
 
 import java.io.IOException;
 
@@ -8,7 +8,7 @@ public final class Runner {
 
     public static void main(String[] args) throws IOException {
         try {
-            Thread.sleep(1200);
+            Thread.sleep(2000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

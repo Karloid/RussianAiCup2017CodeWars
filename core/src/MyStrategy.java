@@ -6,6 +6,11 @@ import java.util.stream.Stream;
 
 @SuppressWarnings({"UnsecureRandomNumberGeneration", "FieldCanBeLocal", "unused", "OverlyLongMethod"})
 public final class MyStrategy implements Strategy {
+    private static int constantId;
+
+    public static final int PLAIN_SMOOTH = constantId++;
+    public static final int SMOTHY_SMOOTH = constantId++;
+
     private Random random;
 
     private TerrainType[][] terrainTypeByCellXY;
@@ -274,6 +279,11 @@ public final class MyStrategy implements Strategy {
     private Stream<Vehicle> streamVehicles() {
         return streamVehicles(Ownership.ANY);
     }
+
+    static double distanceTo(int xxxx, int yyyy) {
+        return StrictMath.hypot(xxxx, yyyy);
+    }
+
 
     private enum Ownership {
         ANY,

@@ -1,3 +1,5 @@
+package trash;
+
 import java.awt.Color;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -5,20 +7,20 @@ import java.net.Socket;
 
 
 /**
- * Java client for Rewind viewer. Put this file to the same default package where Strategy/MyStrategy/Runner and other
+ * Java client for Rewind viewer. Put this file to the same default package where model.Strategy/MyStrategy/model.Runner and other
  * files are extracted.
  * <p>
  * Sample usage:
  * <pre>
  * {@code
  *
- *  private final RewindClient rewindClient = new RewindClient();
+ *  private final trash.RewindClient rewindClient = new trash.RewindClient();
  *
  *  @Override
  *  public void move(Wizard self, World world, Game game, Move move) {
  *      initializeTick(self, world, game, move);
  *      for (Wizard w : world.getWizards()) {
- *          RewindClient.Side side = w.getFaction() == self.getFaction() ? RewindClient.Side.OUR : RewindClient.Side.ENEMY;
+ *          trash.RewindClient.Side side = w.getFaction() == self.getFaction() ? trash.RewindClient.Side.OUR : trash.RewindClient.Side.ENEMY;
  *          rewindClient.livingUnit(w.getId(), w.getX(), w.getY(), w.getRadius(), w.getLife(), w.getMaxLife(), side);
  *      }
  *      ...
