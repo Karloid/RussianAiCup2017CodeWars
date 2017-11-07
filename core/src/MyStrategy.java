@@ -116,13 +116,20 @@ public final class MyStrategy implements Strategy {
         List<VehicleGroupInfo> myGroups = getGroups(Ownership.ALLY);
 
         for (VehicleGroupInfo myGroup : myGroups) {
-         /*   if (myGroup.vehicleType != FIGHTER) {
-                continue;
-            }*/
+            if (myGroup.vehicleType == HELICOPTER) {
+                boolean specialCase = false;
+                for (VehicleGroupInfo group : myGroups) {
+                    if (group.vehicleType == IFV) {
+                        selectAll(HELICOPTER);
+                        moveToPoint(myGroup, group.averagePoint);
+                        specialCase = true;
+                    }
+                }
+                if (specialCase) {
+                    continue;
+                }
+            }
 
-         /*   if (myGroup.vehicleType == ARRV && world.getTickIndex() % 2 == 0) {
-                continue;
-            }*/
             List<VehicleType> targetType = getPreferredTargetType(myGroup.vehicleType);
             VehicleGroupInfo enemyGroup = priorityFilter(enemyGroups, targetType);
             if (enemyGroup == null) {
@@ -246,7 +253,7 @@ public final class MyStrategy implements Strategy {
             case HELICOPTER:
                 return Arrays.asList(TANK, ARRV, HELICOPTER, IFV, FIGHTER);
             case IFV:
-                return Arrays.asList(HELICOPTER, FIGHTER, IFV, ARRV, TANK);
+                return Arrays.asList(FIGHTER, HELICOPTER, IFV, ARRV, TANK);
             case TANK:
                 return Arrays.asList(IFV, TANK, ARRV, HELICOPTER, FIGHTER);
             default:
