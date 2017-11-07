@@ -25,7 +25,7 @@ public class RewindClientMy {
 
     public void circle(double x, double y, double r, int color) {
         String fmt =
-                "{\"type\": \"circle\", \"x\": %f, \"y\": %f, \"r\": %f, \"color\": %o})";
+                "{\"type\": \"circle\", \"x\": %f, \"y\": %f, \"r\": %f, \"color\": %o}";
         send(String.format(fmt, x, y, r, color));
     }
 
@@ -69,7 +69,7 @@ public class RewindClientMy {
      * @param msg .
      */
     public void message(String msg) {
-        String s = "{\"type\": \"message\", \"message\" : \"" + msg + " \")";
+        String s = "{\"type\": \"message\", \"message\" : \"" + msg + " \"}";
         send(s);
     }
 

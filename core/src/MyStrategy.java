@@ -187,9 +187,20 @@ public final class MyStrategy implements Strategy {
                 });
 
                 delayedMoves.add(move -> {
+                    double x2 = world.getWidth() / 2.0D;
+                    double y2 = world.getHeight() / 2.0D;
+
+                    x2 = streamVehicles(Ownership.ALLY)
+                            .filter(vehicle -> vehicle.getType() != VehicleType.ARRV)
+                            .mapToDouble(Unit::getX)
+                            .average().orElse(x2);
+                    y2 = streamVehicles(Ownership.ALLY)
+                            .filter(vehicle -> vehicle.getType() != VehicleType.ARRV)
+                            .mapToDouble(Unit::getY)
+                            .average().orElse(y2);
                     move.setAction(ActionType.MOVE);
-                    move.setX(world.getWidth() / 2.0D - x);
-                    move.setY(world.getHeight() / 2.0D - y);
+                    move.setX(x2);
+                    move.setY(y2);
                 });
             }
 
