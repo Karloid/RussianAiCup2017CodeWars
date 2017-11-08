@@ -8,6 +8,8 @@ import static model.VehicleType.*;
 
 @SuppressWarnings({"UnsecureRandomNumberGeneration", "FieldCanBeLocal", "unused", "OverlyLongMethod"})
 public final class MyStrategy implements Strategy {
+    public static final double GROUP_SIZE = 48;
+    public static final double GROUP_HALF_SIZE = GROUP_SIZE / 2;
     private static int constantId;
 
     public static final int PLAIN_SMOOTH = constantId++;
@@ -127,12 +129,26 @@ public final class MyStrategy implements Strategy {
         for (VehicleGroupInfo myGroup : myGroups) {
 
             if (myGroup.isMovingToPoint()) {
-                log("skip schedule for group myGroup");
+                // log("skip schedule for group myGroup");
                 continue;
             }
 
 
             if (isArrvMoving && (myGroup.vehicleType == IFV || myGroup.vehicleType == TANK)) {
+
+            /*    VehicleGroupInfo arrvs = findGroup(myGroups, ARRV);
+                if (arrvs != null && arrvs.moveToPoint != null) {
+                    double x = myGroup.getAveragePoint().getX();
+                    double y = myGroup.getAveragePoint().getY();
+                    if (arrvs.moveToPoint.getX() == GROUP_HALF_SIZE) {
+                        y = GROUP_HALF_SIZE;
+                    } else {
+                        x = GROUP_HALF_SIZE;
+                    }
+                    Point2D point = new Point2D(x, y);
+                    selectAll(myGroup.vehicleType);
+                    moveToPoint(myGroup, point);
+                }*/
                 continue;
             }
             if (myGroup.vehicleType == HELICOPTER) {
@@ -143,7 +159,25 @@ public final class MyStrategy implements Strategy {
             }
 
             if (myGroup.vehicleType == FIGHTER) {
-                boolean specialCase = moveToAllyGroup(myGroup, TANK);
+                boolean specialCase = false;
+                VehicleGroupInfo enHelicopters = findGroup(enemyGroups, HELICOPTER);
+                VehicleGroupInfo enIFV = findGroup(enemyGroups, IFV);
+                VehicleGroupInfo enFighters = findGroup(enemyGroups, FIGHTER);
+                if (enHelicopters != null && enIFV != null
+                        && enHelicopters.getAveragePoint().getDistanceTo(enIFV.getAveragePoint()) > GROUP_SIZE * 1.3f) {
+                    selectAll(FIGHTER);
+                    moveToPoint(myGroup, enHelicopters.getAveragePoint());
+                    specialCase = true;
+                } else if (world.getTickIndex() > 140 && enFighters != null && enIFV != null
+                        && enFighters.getAveragePoint().getDistanceTo(enIFV.getAveragePoint()) > GROUP_SIZE * 1.3f) {
+                    selectAll(FIGHTER);
+                    moveToPoint(myGroup, enFighters.getAveragePoint());
+                    specialCase = true;
+                }
+
+                if (!specialCase) {
+                    specialCase = moveToAllyGroup(myGroup, TANK);
+                }
                 if (specialCase) {
                     continue;
                 }
@@ -158,9 +192,9 @@ public final class MyStrategy implements Strategy {
                     double x = myGroup.getAveragePoint().getX();
                     double y = myGroup.getAveragePoint().getY();
                     if (x > y) {
-                        y = 0;
+                        y = GROUP_HALF_SIZE;
                     } else {
-                        x = 0;
+                        x = GROUP_HALF_SIZE;
                     }
                     selectAll(myGroup.vehicleType);
                     moveToPoint(myGroup, new Point2D(x, y));
@@ -213,6 +247,15 @@ public final class MyStrategy implements Strategy {
         }
     }
 
+    private VehicleGroupInfo findGroup(List<VehicleGroupInfo> groups, VehicleType type) {
+        for (VehicleGroupInfo g : groups) {
+            if (g.vehicleType == type) {
+                return g;
+            }
+        }
+        return null;
+    }
+
     private void refreshGroups(List<VehicleGroupInfo> groups) {
         for (VehicleGroupInfo group : groups) {
             VehicleGroupInfo currentState = getGroup(group.ownership, group.vehicleType);
@@ -239,7 +282,7 @@ public final class MyStrategy implements Strategy {
     private Point2D normalize(Point2D movePoint) {
         double x = movePoint.getX();
         double y = movePoint.getY();
-        int padding = 100;
+        double padding = GROUP_HALF_SIZE;
         x = Math.min(x, world.getWidth() - padding);
         x = Math.max(x, padding);
 
