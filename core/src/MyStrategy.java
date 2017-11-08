@@ -27,11 +27,13 @@ public final class MyStrategy implements Strategy {
     private final Map<Long, Integer> updateTickByVehicleId = new HashMap<>();
     private final Queue<Consumer<Move>> delayedMoves = new ArrayDeque<>();
     private Point2D centerPoint;
+    private List<VehicleGroupInfo> enemyGroups;
+    private List<VehicleGroupInfo> myGroups;
 
     @Override
     public void move(Player me, World world, Game game, Move move) {
-        initializeStrategy(world, game);
         initializeTick(me, world, game, move);
+        initializeStrategy(world, game);
 
         if (me.getRemainingActionCooldownTicks() > 0) {
             return;
@@ -62,6 +64,9 @@ public final class MyStrategy implements Strategy {
             weatherTypeByCellXY = world.getWeatherByCellXY();
 
             centerPoint = new Point2D(world.getWidth() / 2, world.getHeight() / 2);
+
+            enemyGroups = getGroups(Ownership.ENEMY);
+            myGroups = getGroups(Ownership.ALLY);
         }
     }
 
@@ -110,22 +115,60 @@ public final class MyStrategy implements Strategy {
     private void move() {
         // Каждые 300 тиков ...
         // ... для каждого типа техники ...
+
+        enemyGroups = getGroups(Ownership.ENEMY);
+
+        refreshGroups(myGroups);
+
         log("Schedule new moves");
 
-        List<VehicleGroupInfo> enemyGroups = getGroups(Ownership.ENEMY);
-        List<VehicleGroupInfo> myGroups = getGroups(Ownership.ALLY);
+        boolean isArrvMoving = world.getTickIndex() < 200;
 
         for (VehicleGroupInfo myGroup : myGroups) {
+
+            if (myGroup.isMovingToPoint()) {
+                log("skip schedule for group myGroup");
+                continue;
+            }
+
+
+            if (isArrvMoving && (myGroup.vehicleType == IFV || myGroup.vehicleType == TANK)) {
+                continue;
+            }
             if (myGroup.vehicleType == HELICOPTER) {
-                boolean specialCase = false;
-                for (VehicleGroupInfo group : myGroups) {
-                    if (group.vehicleType == IFV) {
-                        selectAll(HELICOPTER);
-                        moveToPoint(myGroup, group.averagePoint);
-                        specialCase = true;
-                    }
-                }
+                boolean specialCase = moveToAllyGroup(myGroup, IFV);
                 if (specialCase) {
+                    continue;
+                }
+            }
+
+            if (myGroup.vehicleType == FIGHTER) {
+                boolean specialCase = moveToAllyGroup(myGroup, TANK);
+                if (specialCase) {
+                    continue;
+                }
+            }
+
+
+            if (myGroup.vehicleType == ARRV) {
+                ArrayList<VehicleGroupInfo> groups = new ArrayList<>(myGroups);
+                Collections.sort(groups, Comparator.comparingDouble(value -> value.getAveragePoint().getDistanceTo(new Point2D(0, 0))));
+                boolean shouldGo = groups.get(0).vehicleType == ARRV || world.getTickIndex() > 400;
+                if (isArrvMoving || !shouldGo) {
+                    double x = myGroup.getAveragePoint().getX();
+                    double y = myGroup.getAveragePoint().getY();
+                    if (x > y) {
+                        y = 0;
+                    } else {
+                        x = 0;
+                    }
+                    selectAll(myGroup.vehicleType);
+                    moveToPoint(myGroup, new Point2D(x, y));
+                    continue;
+                } else {
+                    //selectAll(myGroup.vehicleType);
+                    groups.remove(0);
+                    moveToAllyGroup(myGroup, groups.get((int) (groups.size() * random.nextFloat())).vehicleType);
                     continue;
                 }
             }
@@ -136,20 +179,18 @@ public final class MyStrategy implements Strategy {
                 selectAll(myGroup.vehicleType);
 
                 Point2D point = this.centerPoint;
+                if (myGroup.vehicleType == FIGHTER) {
+                    point = new Point2D(world.getWidth(), 0);
+                }
+
                 moveToPoint(myGroup, point);
             } else {
                 selectAll(myGroup.vehicleType);
 
-                Point2D movePoint = enemyGroup.averagePoint;
+                Point2D movePoint = enemyGroup.getAveragePoint();
                 movePoint = normalize(movePoint);
                 Point2D finalMovePoint = movePoint;
-                delayedMoves.add(move -> {
-                    move.setAction(ActionType.MOVE);
-                    move.setX(finalMovePoint.getX() - myGroup.averagePoint.getX());
-                    move.setY(finalMovePoint.getY() - myGroup.averagePoint.getY());
-                    log("move to point " + finalMovePoint.toString() + " group " + myGroup + " dist: " +
-                            Utils.format(finalMovePoint.getDistanceTo(myGroup.averagePoint)));
-                });
+                moveToPoint(myGroup, finalMovePoint);
             }
         }
 
@@ -157,16 +198,42 @@ public final class MyStrategy implements Strategy {
             return;
         }*/
         // Если ни один наш юнит не мог двигаться в течение 60 тиков ...
-        long allUnits = streamVehicles(Ownership.ALLY).count();
-        float notUpdatedUnits = streamVehicles(Ownership.ALLY).filter(vehicle -> world.getTickIndex() - updateTickByVehicleId.get(vehicle.getId()) > 60).count() * 1f;
-        if (notUpdatedUnits / allUnits > 0.5) {
-            /// ... находим центр нашей формации ...
-            log("We stuck " + notUpdatedUnits);
-            VehicleGroupInfo group = getGroup(Ownership.ALLY, null);
-            delayedMoves.clear();
-            selectAll(null);
-            moveToPoint(group, centerPoint);
+        //TODO check moveToPointAt for detecting stuck
+        if (world.getTickIndex() > 1000 && false) {
+            long allUnits = streamVehicles(Ownership.ALLY).count();
+            float notUpdatedUnits = streamVehicles(Ownership.ALLY).filter(vehicle -> world.getTickIndex() - updateTickByVehicleId.get(vehicle.getId()) > 60).count() * 1f;
+            if (notUpdatedUnits / allUnits > 0.5) {
+                /// ... находим центр нашей формации ...
+                log("We stuck " + notUpdatedUnits);
+                VehicleGroupInfo group = getGroup(Ownership.ALLY, null);
+                delayedMoves.clear();
+                selectAll(null);
+                moveToPoint(group, centerPoint);
+            }
         }
+    }
+
+    private void refreshGroups(List<VehicleGroupInfo> groups) {
+        for (VehicleGroupInfo group : groups) {
+            VehicleGroupInfo currentState = getGroup(group.ownership, group.vehicleType);
+            group.pointsInfo = currentState.pointsInfo;
+            group.count = currentState.count;
+        }
+
+        groups.removeIf(vehicleGroupInfo -> vehicleGroupInfo.count == 0);
+
+    }
+
+    private boolean moveToAllyGroup(VehicleGroupInfo myGroup, VehicleType allyType) {
+        boolean specialCase = false;
+        for (VehicleGroupInfo group : myGroups) {
+            if (group.vehicleType == allyType) {
+                selectAll(myGroup.vehicleType);
+                moveToPoint(myGroup, group.getAveragePoint());
+                specialCase = true;
+            }
+        }
+        return specialCase;
     }
 
     private Point2D normalize(Point2D movePoint) {
@@ -184,10 +251,25 @@ public final class MyStrategy implements Strategy {
 
     private void moveToPoint(VehicleGroupInfo myGroup, Point2D point) {
         delayedMoves.add(move -> {
+            Point2D p = point;
+            double distanceTo = myGroup.getAveragePoint().getDistanceTo(p);
+            double maxDistance = 250;
+            if (distanceTo > maxDistance) {
+                double koeff = maxDistance / distanceTo;
+                p = new Point2D((p.getX() - myGroup.getAveragePoint().getX()) * koeff + myGroup.getAveragePoint().getX(),
+                        (p.getY() - myGroup.getAveragePoint().getY()) * koeff + myGroup.getAveragePoint().getY());
+            }
+
             move.setAction(ActionType.MOVE);
-            move.setX(point.getX() - myGroup.averagePoint.getX());
-            move.setY(point.getY() - myGroup.averagePoint.getY());
-            log("move to point " + point + " group " + myGroup);
+            move.setX(p.getX() - myGroup.getAveragePoint().getX());
+            move.setY(p.getY() - myGroup.getAveragePoint().getY());
+            //TODO look at tanks group
+            if (myGroup.vehicleType == IFV) {
+                move.setMaxSpeed(game.getTankSpeed() * 0.6);
+            }
+            log("move to point " + p + " group " + myGroup);
+            myGroup.moveToPoint = p;
+            myGroup.moveToPointAt = world.getTickIndex();
         });
     }
 
@@ -228,14 +310,14 @@ public final class MyStrategy implements Strategy {
     }
 
     private VehicleGroupInfo getGroup(Ownership ownership, VehicleType vehicleType) {
-        VehicleGroupInfo info = new VehicleGroupInfo(vehicleType);
-        Point2D averagePoint = streamVehicles(ownership, vehicleType)
+        VehicleGroupInfo info = new VehicleGroupInfo(ownership, vehicleType, this);
+        PointsInfo pointsInfo = streamVehicles(ownership, vehicleType)
                 .map(vehicle -> {
                     info.count++;
                     return new Point2D(vehicle.getX(), vehicle.getY());
                 })
                 .collect(Utils.POINT_COLLECTOR);
-        info.averagePoint = averagePoint;
+        info.pointsInfo = pointsInfo;
         return info;
     }
 
@@ -293,8 +375,14 @@ public final class MyStrategy implements Strategy {
         return StrictMath.hypot(xxxx, yyyy);
     }
 
+    public int getMinTimeWithoutUpdates(VehicleGroupInfo vehicleGroupInfo) {
+        return streamVehicles(vehicleGroupInfo.ownership, vehicleGroupInfo.vehicleType)
+                .mapToInt(v -> world.getTickIndex() - updateTickByVehicleId.get(v.getId()))
+                .min().orElse(0);
+    }
 
-    private enum Ownership {
+
+    enum Ownership {
         ANY,
         ALLY,
         ENEMY

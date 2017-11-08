@@ -1,7 +1,7 @@
 import java.util.stream.Collector;
 
 public class Utils {
-    public static final Collector<Point2D, Point2DSummary, Point2D> POINT_COLLECTOR =
+    public static final Collector<Point2D, Point2DSummary, PointsInfo> POINT_COLLECTOR =
             Collector.of(
                     () -> new Point2DSummary(),          // supplier
                     (j, p) -> j.accept(p),  // accumulator
@@ -11,7 +11,7 @@ public class Utils {
                         v.accept(j2.average());
                         return v;
                     },               // combiner
-                    summary -> summary.average());
+                    summary -> new PointsInfo(summary));
 
     public static String format(double v) {
         return String.format("%.2f", v);
