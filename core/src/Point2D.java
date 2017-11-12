@@ -88,4 +88,8 @@ public final class Point2D {
     public static Point2D vector(double fromX, double fromY, double toX, double toY) {
         return new Point2D(toX - fromX, toY - fromY);
     }
+
+    public double getDistanceTo(VehicleWrapper myVehicle) {
+        return getDistanceTo(myVehicle.v);
+    }
 }

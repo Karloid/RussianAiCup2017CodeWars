@@ -1,4 +1,7 @@
+import java.util.Comparator;
+
 public class NuclearStrike {
+    public static final int PREDICTION_TICK = 33;
     public final VehicleWrapper myVehicle;
     public final VehicleWrapper target;
     public final MyStrategy myStrategy;
@@ -18,7 +21,7 @@ public class NuclearStrike {
         //TODO calc dmg
         dmg = myStrategy.um.streamVehicles(Ownership.ENEMY)
                 .mapToDouble(enemyVeh -> {
-                    double distanceTo = enemyVeh.getDistanceTo(target);
+                    double distanceTo = enemyVeh.getDistanceToPredictBoth(target, PREDICTION_TICK);
                     if (distanceTo > 50) {
                         return 0;
                     }
@@ -34,5 +37,16 @@ public class NuclearStrike {
         sb.append(", dmg=").append(dmg);
         sb.append('}');
         return sb.toString();
+    }
+
+    public static NuclearStrike getMaxDmg(MyStrategy mys) {
+        return mys.um.streamVehicles(Ownership.ENEMY)
+                .flatMap((VehicleWrapper v) ->
+                        mys.um.streamVehicles(Ownership.ALLY)
+                                .filter(myVehicle ->
+                                        myVehicle.getDistanceToPredictTarget(v, PREDICTION_TICK) < myVehicle.v.getVisionRange())
+                                .map(myVehicle -> new NuclearStrike(myVehicle, v, mys)))
+                .max(Comparator.comparingDouble(o -> o.dmg))
+                .orElse(null);
     }
 }

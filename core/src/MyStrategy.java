@@ -39,6 +39,9 @@ public final class MyStrategy implements Strategy {
         initializeTick(me, world, game, move);
         initializeStrategy(world, game);
 
+
+        doConstantPart();
+
         if (me.getRemainingActionCooldownTicks() > 0) {
             return;
         }
@@ -52,6 +55,12 @@ public final class MyStrategy implements Strategy {
 
         executeDelayedMove();
         delayedMovesSize();
+    }
+
+    private void doConstantPart() {
+        if (scheduledStrike != null) {
+            log(NUCLEAR_STRIKE + " moving of targeting vehicle " + scheduledStrike.myVehicle.getMoveVector());
+        }
     }
 
     private void delayedMovesSize() {
@@ -116,7 +125,7 @@ public final class MyStrategy implements Strategy {
         refreshGroups(myGroups);
 
         if (me.getRemainingNuclearStrikeCooldownTicks() == 0 && scheduledStrike == null) {
-            NuclearStrike max = um.streamVehicles(Ownership.ENEMY).flatMap((VehicleWrapper v) -> um.streamVehicles(Ownership.ALLY).filter(myVehicle -> myVehicle.getDistanceTo(v) < myVehicle.v.getVisionRange()).map(myVehicle -> new NuclearStrike(myVehicle, v, this))).max(Comparator.comparingDouble(o -> o.dmg)).orElse(null);
+            NuclearStrike max = NuclearStrike.getMaxDmg(this);
 
             if (max != null && max.dmg > 50) {
                 delayedMoves.clear();
@@ -139,6 +148,16 @@ public final class MyStrategy implements Strategy {
                     move1.setVehicleId(max.myVehicle.v.getId());
 
                     max.actualTarget = max.target.getPos(30);
+                    double distance = max.actualTarget.getDistanceTo(max.myVehicle);
+                    if (distance > max.myVehicle.v.getVisionRange()) {
+                        log(NUCLEAR_STRIKE + " correct point from " + max.actualTarget);
+                        Point2D vector = Point2D.vector(max.myVehicle.getX(), max.myVehicle.getY(), max.actualTarget.getX(), max.actualTarget.getY());
+
+                        double k = distance / max.myVehicle.v.getVisionRange();
+                        max.actualTarget = new Point2D(max.myVehicle.getX(0) + vector.getX() * k, max.myVehicle.getY(0) + vector.getY() * k);
+                        log(NUCLEAR_STRIKE + " correct point to " + max.actualTarget);
+                    }
+
                     move1.setX(max.actualTarget.getX());
                     move1.setY(max.actualTarget.getY());
 
@@ -284,10 +303,11 @@ public final class MyStrategy implements Strategy {
     private void clearAndSelectOneUnit(NuclearStrike max, Move move1, VehicleWrapper unit) {
         move1.setAction(ActionType.CLEAR_AND_SELECT);
         move1.setVehicleId(max.myVehicle.v.getId());
-        move1.setRight(unit.v.getX() + 1);
-        move1.setBottom(unit.v.getY() + 1);
-        move1.setTop(unit.v.getY() + 1);
-        move1.setBottom(unit.v.getY() - 1);
+        move1.setRight(unit.v.getX() + 2);
+        move1.setLeft(unit.v.getX() - 2);
+
+        move1.setTop(unit.v.getY() - 2);
+        move1.setBottom(unit.v.getY() + 2);
     }
 
     private VehicleGroupInfo findGroup(List<VehicleGroupInfo> groups, VehicleType type) {

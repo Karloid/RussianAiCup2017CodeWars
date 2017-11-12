@@ -21,7 +21,7 @@ public class UnitManager {
 
     public void initializeTick() {
         for (Vehicle vehicle : mys.world.getNewVehicles()) {
-            VehicleWrapper mv = new VehicleWrapper(vehicle, mys.world);
+            VehicleWrapper mv = new VehicleWrapper(vehicle, mys);
             vehicleById.put(vehicle.getId(), mv);
         }
 
