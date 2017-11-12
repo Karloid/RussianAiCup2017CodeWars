@@ -362,8 +362,31 @@ public final class MyStrategy implements Strategy {
                     continue;
                 } else {
                     //scheduleSelectAll(myGroup.vehicleType);
-                    groups.remove(0);
-                    moveToAllyGroup(myGroup, groups.get((int) (groups.size() * random.nextFloat())).vehicleType);
+                    groups.removeIf(vehicleGroupInfo -> vehicleGroupInfo == myGroup);
+
+                    if (groups.isEmpty()) {
+                        scheduleMoveToPoint(myGroup, new Point2D(0, 0));
+                    }
+                    VehicleGroupInfo toGroup = null;
+                    for (VehicleGroupInfo group : groups) {
+                        if (group.vehicleType == TANK || group.vehicleType == IFV) {
+                            toGroup = group;
+                            break;
+                        }
+                    }
+                    if (toGroup == null) {
+                        toGroup = groups.get((int) (groups.size() * random.nextFloat()));
+                    }
+
+                    scheduleSelectAll(myGroup.vehicleType);
+                    if (toGroup.moveToPoint != null) {
+                      // scheduleMoveToPoint(myGroup, new Point2D(toGroup.getAveragePoint().getX() + toGroup.moveToPoint.getX(),
+                      //         toGroup.getAveragePoint().getY() + toGroup.moveToPoint.getY()));
+
+                        scheduleMoveToPoint(myGroup, toGroup.moveToPoint);
+                    } else {
+                        scheduleMoveToPoint(myGroup, toGroup);
+                    }
                     continue;
                 }
             }
