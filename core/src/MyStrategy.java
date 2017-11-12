@@ -289,10 +289,10 @@ public final class MyStrategy implements Strategy {
                 continue;
             }
 
-            if (myGroup.itsTooBig() && world.getTickIndex() - myGroup.lastShrinkI > 200) {
+          /*  if (myGroup.itsTooBig() && world.getTickIndex() - myGroup.lastShrinkI > 400) {
                 scheduleShrink(myGroup);
                 continue;
-            }
+            }*/
 
 
             if (isArrvMoving && (myGroup.vehicleType == IFV || myGroup.vehicleType == TANK)) {
@@ -420,6 +420,13 @@ public final class MyStrategy implements Strategy {
             move1.setY(myGroup.getAveragePoint().getY() - 15);
             move1.setFactor(0.1);
         });
+        delayedMoves.add(move1 -> {
+            myGroup.lastShrinkI = world.getTickIndex();
+            move1.setAction(ActionType.SCALE);
+            move1.setX(myGroup.getAveragePoint().getX() - 25);
+            move1.setY(myGroup.getAveragePoint().getY() + 15);
+            move1.setFactor(0.1);
+        });
     }
 
     private void clearAndSelectOneUnit(NuclearStrike max, Move move1, VehicleWrapper unit) {
@@ -480,7 +487,13 @@ public final class MyStrategy implements Strategy {
 
     private void scheduleMoveToPoint(VehicleGroupInfo myGroup, VehicleGroupInfo toGroup) {
         delayedMoves.add(move -> {
-            actualMoveToPoint(myGroup, toGroup.getAveragePoint(), move);
+            Point2D goToPoint = toGroup.getAveragePoint();
+            if (!toGroup.vehicles.isEmpty()) {
+                toGroup.vehicles.sort(Comparator.comparingDouble(o -> myGroup.getAveragePoint().getDistanceTo(o)));
+                goToPoint = toGroup.vehicles.get(0).getPos(0);
+            }
+
+            actualMoveToPoint(myGroup, goToPoint, move);
         });
     }
 

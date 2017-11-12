@@ -20,6 +20,7 @@ public class NuclearStrike {
     public TickStats enemyStats;
     public boolean succeed;
     public boolean canceled;
+    public int predictedAffectedUnits;
 
     public NuclearStrike(VehicleWrapper myVehicle, VehicleWrapper target, MyStrategy myStrategy) {
         this.myVehicle = myVehicle;
@@ -40,7 +41,7 @@ public class NuclearStrike {
             return;
         }
 
-
+        predictedAffectedUnits = 0;
         predictedDmg = myStrategy.um.streamVehicles()
                 .mapToDouble(veh -> {
                     double distanceTo;
@@ -63,10 +64,11 @@ public class NuclearStrike {
                         dmg *= 0.7f;
                     }
 
-                    boolean isEnemy = veh.v.getPlayerId() != myId;
+                    boolean isEnemy = veh.isEnemy;
                     if (!isEnemy) {
                         dmg = dmg * -1.5;
                     }
+                    predictedAffectedUnits += 1;
                     return dmg;
                 }).sum();
     }
@@ -77,6 +79,7 @@ public class NuclearStrike {
         sb.append("myVehicle=").append(myVehicle);
         sb.append(", target=").append(target);
         sb.append(", predictedDmg=").append(predictedDmg);
+        sb.append(", predictedAffectedUnits=").append(predictedAffectedUnits);
         sb.append(", createdAt=").append(createdAt);
         sb.append(", startedAt=").append(startedAt);
         sb.append(", actualTarget=").append(actualTarget);
