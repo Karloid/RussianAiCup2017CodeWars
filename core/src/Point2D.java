@@ -43,7 +43,17 @@ public final class Point2D {
     }
 
     public double getDistanceTo(double x, double y) {
-        return StrictMath.hypot(this.x - x, this.y - y);
+        return getDistance(this.x, this.y, x, y);
+    }
+
+    public static double getDistance(Unit unit1, Unit unit2) {
+        return getDistance(unit1.getX(), unit1.getY(), unit2.getX(), unit2.getY());
+    }
+
+    public static double getDistance(double x1, double y1, double x2, double y2) {
+        double dx = x1 - x2;
+        double dy = y1 - y2;
+        return Math.sqrt(dx * dx + dy * dy);
     }
 
     public double getDistanceTo(Point2D point) {

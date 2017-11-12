@@ -384,8 +384,8 @@ public final class MyStrategy implements Strategy {
         }
     }
 
-    static double distanceTo(int xxxx, int yyyy) {
-        return StrictMath.hypot(xxxx, yyyy);
+    static double distanceTo(int dx, int dy) {
+        return Math.sqrt(dx * dx + dy * dy);
     }
 
 
