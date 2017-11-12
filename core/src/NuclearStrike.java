@@ -31,6 +31,11 @@ public class NuclearStrike {
 
         long myId = myStrategy.me.getId();
 
+        if (myVehicle.v.getDurability() < 50) {
+            predictedDmg = 0;
+            return;
+        }
+
 
         predictedDmg = myStrategy.um.streamVehicles()
                 .mapToDouble(veh -> {
@@ -82,6 +87,7 @@ public class NuclearStrike {
                                 .filter(myVehicle ->
                                         myVehicle.getDistanceToPredictTarget(v, PREDICTION_TICK) < myVehicle.v.getVisionRange())
                                 .map(myVehicle -> new NuclearStrike(myVehicle, v, mys)))
+                                .filter(nuclearStrike -> nuclearStrike.predictedDmg > MyStrategy.MIN_NUCLEAR_DMG)
                 .max(Comparator.comparingDouble(o -> o.predictedDmg))
                 .orElse(null);
     }
