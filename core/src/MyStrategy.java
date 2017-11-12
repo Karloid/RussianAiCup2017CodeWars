@@ -9,7 +9,8 @@ import static model.VehicleType.*;
 public final class MyStrategy implements Strategy {
     public static final double GROUP_SIZE = 48;
     public static final double GROUP_HALF_SIZE = GROUP_SIZE / 2;
-    public static final String NUCLEAR_STRIKE = "NUCLEAR_STIKE";
+    public static final String NUCLEAR_STRIKE = "NUCLEAR_STRIKE";
+    public static final int MIN_NUCLEAR_DMG = 500;
     private static int constantId;
 
     public static final int PLAIN_SMOOTH = constantId++;
@@ -34,7 +35,8 @@ public final class MyStrategy implements Strategy {
     UnitManager um = new UnitManager(this);
     private NuclearStrike scheduledStrike;
     private long elapsed;
-    private List<NuclearStrike> didNuclearStrikes = new ArrayList<>();
+    List<NuclearStrike> didNuclearStrikes = new ArrayList<>();
+    private Player opponent;
 
     @Override
     public void move(Player me, World world, Game game, Move move) {
@@ -44,6 +46,7 @@ public final class MyStrategy implements Strategy {
 
 
         doConstantPart();
+        //TODO do something with nuclear attacks
 
         if (me.getRemainingActionCooldownTicks() > 0) {
             //nothing
@@ -71,22 +74,35 @@ public final class MyStrategy implements Strategy {
     }
 
     private void printNuclearStats() {
+        int succeed = 0;
         for (NuclearStrike didNuclearStrike : didNuclearStrikes) {
             log(NUCLEAR_STRIKE + " did " + didNuclearStrike);
+            if (didNuclearStrike.succeed) {
+                succeed++;
+            }
         }
-        log(NUCLEAR_STRIKE+ " stats: count: " +  didNuclearStrikes.size() + " succeed: unknown" + 0);
+        log(NUCLEAR_STRIKE + " stats: count: " + didNuclearStrikes.size() + " succeed: " + succeed);
     }
 
     private void doConstantPart() {
         if (scheduledStrike != null) {
-            if (scheduledStrike.startedAt != -1 && world.getTickIndex() > scheduledStrike.startedAt + 30) {
-                log(NUCLEAR_STRIKE + " was done " + scheduledStrike);
+            Point2D mv = scheduledStrike.myVehicle.getMoveVector();
+            if (mv != VehicleWrapper.NOT_MOVING) {
+                log(NUCLEAR_STRIKE + "!!! moving targeting unit" + mv);
+            }
 
-                scheduledStrike.actualDmg = 0; //TODO
-                didNuclearStrikes.add(scheduledStrike);
+            if (scheduledStrike.startedAt != -1 && world.getTickIndex() > scheduledStrike.startedAt + game.getTacticalNuclearStrikeDelay()) {
+
+
+                scheduledStrike.finish();
+
                 scheduledStrike = null;
             }
         }
+    }
+
+    private void finishNuclear() {
+
     }
 
     private void delayedMovesSize() {
@@ -111,6 +127,7 @@ public final class MyStrategy implements Strategy {
 
     private void initializeTick(Player me, World world, Game game, Move move) {
         this.me = me;
+        this.opponent = world.getOpponentPlayer();
         this.world = world;
         this.game = game;
         this.move = move;
@@ -146,14 +163,15 @@ public final class MyStrategy implements Strategy {
         if (me.getRemainingNuclearStrikeCooldownTicks() == 0 && scheduledStrike == null) {
             NuclearStrike max = NuclearStrike.getMaxDmg(this);
 
-            if (max != null && max.dmg > 400) {
+            if (max != null && max.predictedDmg > MIN_NUCLEAR_DMG) {
                 delayedMoves.clear();
                 scheduledStrike = max;
-                scheduledStrike.scheduledAt = world.getTickIndex();
+                scheduledStrike.createdAt = world.getTickIndex();
 
                 delayedMoves.add(move1 -> {
-                    clearAndSelectOneUnit(max, move1, max.myVehicle);
-                    scheduledStrike.scheduledAt = world.getTickIndex();
+                    clearAndSelectOneUnit(max, move1, max.myVehicle);  //TODO select group
+
+                    scheduledStrike.createdAt = world.getTickIndex();
                     log(NUCLEAR_STRIKE + " select unit " + max);
                 });
                 delayedMoves.add(move1 -> {
@@ -418,7 +436,7 @@ public final class MyStrategy implements Strategy {
         });
     }
 
-    private void log(String s) {
+    void log(String s) {
         System.out.println(world.getTickIndex() + ": " + s);
     }
 

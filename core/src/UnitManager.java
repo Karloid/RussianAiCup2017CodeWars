@@ -14,12 +14,20 @@ public class UnitManager {
     final Map<Long, VehicleWrapper> vehicleById = new HashMap<>();
     private List<VehicleWrapper> deadVehicles = new ArrayList<>();
 
+    TickStats myStats;
+    TickStats enemyStats;
+
+
     public UnitManager(MyStrategy mys) {
 
         this.mys = mys;
     }
 
     public void initializeTick() {
+
+        myStats = new TickStats();
+        enemyStats = new TickStats();
+
         for (Vehicle vehicle : mys.world.getNewVehicles()) {
             VehicleWrapper mv = new VehicleWrapper(vehicle, mys);
             vehicleById.put(vehicle.getId(), mv);
@@ -32,9 +40,29 @@ public class UnitManager {
                 VehicleWrapper deadVehicle = vehicleById.get(vehicleId);
                 deadVehicles.add(deadVehicle);
             } else {
-                VehicleWrapper myVehicle = vehicleById.get(vehicleId);
-                myVehicle.update(new Vehicle(myVehicle.v, vehicleUpdate));
+                VehicleWrapper veh = vehicleById.get(vehicleId);
+                veh.update(new Vehicle(veh.v, vehicleUpdate));
+                if (veh.hpDelta != 0) {
+                    TickStats stats = veh.isEnemy ? enemyStats : myStats;
+                    if (veh.hpDelta > 0) {
+                        stats.healedPoints += veh.hpDelta;
+                    } else {
+                        stats.damagedPoints += veh.hpDelta;
+                        stats.damagedUnits += 1;
+                        if (veh.v.getDurability() <= 0) {
+                            stats.destroyedUnits += 1;
+                        }
+                    }
+                }
             }
+        }
+
+
+        if (myStats.isNonEmpty()) {
+            mys.log("My stats: " + myStats);
+        }
+        if (enemyStats.isNonEmpty()) {
+             mys.log("Enemy stats: " + enemyStats);
         }
     }
 

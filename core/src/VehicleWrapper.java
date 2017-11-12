@@ -2,17 +2,20 @@ import model.Vehicle;
 
 public class VehicleWrapper {
     public static final Point2D NOT_MOVING = new Point2D(0, 0);
+    public final boolean isEnemy;
     private Point2D moveVector;
     public Vehicle v;
     private final MyStrategy mys;
     public int updatedAt;
     public int movedAt;
+    int hpDelta;
 
     public VehicleWrapper(Vehicle v, MyStrategy mys) {
         this.v = v;
         this.mys = mys;
         setUpdatedAt(mys.world.getTickIndex());
         moveVector = NOT_MOVING;
+        isEnemy = mys.me.getId() != v.getPlayerId();
     }
 
     public void setUpdatedAt(int tickIndex) {
@@ -25,6 +28,7 @@ public class VehicleWrapper {
             moveVector = Point2D.vector(v.getX(), v.getY(), newVehicle.getX(), newVehicle.getY());
         }
 
+        hpDelta = newVehicle.getDurability() - v.getDurability();
 
         v = newVehicle;
     }
