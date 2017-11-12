@@ -19,13 +19,20 @@ public class NuclearStrike {
         this.myStrategy = myStrategy;
 
         //TODO calc dmg
+        double maxDmg = myStrategy.game.getMaxTacticalNuclearStrikeDamage();
+        double maxRadius = myStrategy.game.getTacticalNuclearStrikeRadius();
         dmg = myStrategy.um.streamVehicles(Ownership.ENEMY)
                 .mapToDouble(enemyVeh -> {
                     double distanceTo = enemyVeh.getDistanceToPredictBoth(target, PREDICTION_TICK);
-                    if (distanceTo > 50) {
+                    if (distanceTo > maxRadius) {
                         return 0;
                     }
-                    return 10; //TODO calc dmg
+
+                    double dmg = (1 - distanceTo / maxRadius) * maxDmg;
+                    if (dmg > enemyVeh.v.getDurability()) {
+                        dmg = dmg + 20;
+                    }
+                    return dmg;
                 }).sum();
     }
 

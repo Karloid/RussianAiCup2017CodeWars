@@ -22,7 +22,7 @@ public final class MyStrategy implements Strategy {
 
     Player me;
     World world;
-    private Game game;
+    Game game;
     private Move move;
 
 
@@ -67,7 +67,7 @@ public final class MyStrategy implements Strategy {
 
     private void doConstantPart() {
         if (scheduledStrike != null) {
-            log(NUCLEAR_STRIKE + " moving of targeting vehicle " + scheduledStrike.myVehicle.getMoveVector());
+            //log(NUCLEAR_STRIKE + " moving of targeting vehicle " + scheduledStrike.myVehicle.getMoveVector());
         }
     }
 
