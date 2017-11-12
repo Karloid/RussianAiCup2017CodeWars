@@ -9,6 +9,7 @@ import static model.VehicleType.*;
 public final class MyStrategy implements Strategy {
     public static final double GROUP_SIZE = 48;
     public static final double GROUP_HALF_SIZE = GROUP_SIZE / 2;
+    public static final String NUCLEAR_STRIKE = "NUCLEAR_STIKE";
     private static int constantId;
 
     public static final int PLAIN_SMOOTH = constantId++;
@@ -31,6 +32,7 @@ public final class MyStrategy implements Strategy {
     private List<VehicleGroupInfo> myGroups;
 
     UnitManager um = new UnitManager(this);
+    private NuclearStrike scheduledStrike;
 
     @Override
     public void move(Player me, World world, Game game, Move move) {
@@ -103,11 +105,50 @@ public final class MyStrategy implements Strategy {
         // Каждые 300 тиков ...
         // ... для каждого типа техники ...
 
+        if (scheduledStrike != null) {
+            if (scheduledStrike.startedAt != -1 && world.getTickIndex() > scheduledStrike.startedAt + 30) {
+                log(NUCLEAR_STRIKE + " was done " + scheduledStrike);
+                scheduledStrike = null;
+            }
+        }
+
         enemyGroups = getGroups(Ownership.ENEMY);
         refreshGroups(myGroups);
 
-        if (me.getRemainingNuclearStrikeCooldownTicks() == 0) {
-            //streamVehicles(Ownership.ENEMY).map(v -> {}).filter()
+        if (me.getRemainingNuclearStrikeCooldownTicks() == 0 && scheduledStrike == null) {
+            NuclearStrike max = um.streamVehicles(Ownership.ENEMY).flatMap((VehicleWrapper v) -> um.streamVehicles(Ownership.ALLY).filter(myVehicle -> myVehicle.getDistanceTo(v) < myVehicle.v.getVisionRange()).map(myVehicle -> new NuclearStrike(myVehicle, v, this))).max(Comparator.comparingDouble(o -> o.dmg)).orElse(null);
+
+            if (max != null && max.dmg > 50) {
+                delayedMoves.clear();
+                scheduledStrike = max;
+                scheduledStrike.scheduledAt = world.getTickIndex();
+
+                delayedMoves.add(move1 -> {
+                    clearAndSelectOneUnit(max, move1, max.myVehicle);
+                    scheduledStrike.scheduledAt = world.getTickIndex();
+                    log(NUCLEAR_STRIKE + " select unit " + max);
+                });
+                delayedMoves.add(move1 -> {
+                    move.setAction(ActionType.MOVE);
+                    move.setX(0);
+                    move.setY(0);
+                    log(NUCLEAR_STRIKE + " stop unit " + max);
+                });
+                delayedMoves.add(move1 -> {
+                    move1.setAction(ActionType.TACTICAL_NUCLEAR_STRIKE);
+                    move1.setVehicleId(max.myVehicle.v.getId());
+
+                    max.actualTarget = max.target.getPos(30);
+                    move1.setX(max.actualTarget.getX());
+                    move1.setY(max.actualTarget.getY());
+
+
+                    max.startedAt = world.getTickIndex();
+                    log(NUCLEAR_STRIKE + " start " + max);
+                });
+                return;
+            }
+
         }
 
 
@@ -115,6 +156,11 @@ public final class MyStrategy implements Strategy {
 
         boolean isArrvMoving = world.getTickIndex() < 200;
         for (VehicleGroupInfo myGroup : myGroups) {
+
+            if (scheduledStrike != null && myGroup.vehicles.contains(scheduledStrike.myVehicle)) {
+                log("Skip scheduling for acting group " + myGroup);
+                continue;
+            }
 
             if (myGroup.isMovingToPoint()) {
                 // log("skip schedule for group myGroup");
@@ -235,6 +281,15 @@ public final class MyStrategy implements Strategy {
         }
     }
 
+    private void clearAndSelectOneUnit(NuclearStrike max, Move move1, VehicleWrapper unit) {
+        move1.setAction(ActionType.CLEAR_AND_SELECT);
+        move1.setVehicleId(max.myVehicle.v.getId());
+        move1.setRight(unit.v.getX() + 1);
+        move1.setBottom(unit.v.getY() + 1);
+        move1.setTop(unit.v.getY() + 1);
+        move1.setBottom(unit.v.getY() - 1);
+    }
+
     private VehicleGroupInfo findGroup(List<VehicleGroupInfo> groups, VehicleType type) {
         for (VehicleGroupInfo g : groups) {
             if (g.vehicleType == type) {
@@ -246,9 +301,10 @@ public final class MyStrategy implements Strategy {
 
     private void refreshGroups(List<VehicleGroupInfo> groups) {
         for (VehicleGroupInfo group : groups) {
-            VehicleGroupInfo currentState = getGroup(group.ownership, group.vehicleType);
+            VehicleGroupInfo currentState = getGroup(group.ownership, group.vehicleType); //TODO optimize
             group.pointsInfo = currentState.pointsInfo;
             group.count = currentState.count;
+            group.vehicles = currentState.vehicles;
         }
 
         groups.removeIf(vehicleGroupInfo -> vehicleGroupInfo.count == 0);
@@ -355,6 +411,7 @@ public final class MyStrategy implements Strategy {
         PointsInfo pointsInfo = um.streamVehicles(ownership, vehicleType)
                 .map(vehicle -> {
                     info.count++;
+                    info.vehicles.add(vehicle); //TODO optimize
                     return new Point2D(vehicle.v.getX(), vehicle.v.getY());
                 })
                 .collect(Utils.POINT_COLLECTOR);

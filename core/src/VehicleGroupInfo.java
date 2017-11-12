@@ -1,5 +1,8 @@
 import model.VehicleType;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class VehicleGroupInfo {
     final VehicleType vehicleType; //just testing
     private MyStrategy myStrategy;
@@ -8,6 +11,7 @@ public class VehicleGroupInfo {
     public Point2D moveToPoint;
     public int moveToPointAt;
     public PointsInfo pointsInfo;
+    public List<VehicleWrapper> vehicles = new ArrayList<>();
 
     public VehicleGroupInfo(Ownership ownership, VehicleType vehicleType, MyStrategy myStrategy) {
         this.ownership = ownership;

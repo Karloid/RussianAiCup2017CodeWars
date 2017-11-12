@@ -11,8 +11,8 @@ import java.util.stream.Stream;
 public class UnitManager {
     private MyStrategy mys;
 
-    final Map<Long, MyVehicle> vehicleById = new HashMap<>();
-    private List<MyVehicle> deadVehicles = new ArrayList<>();
+    final Map<Long, VehicleWrapper> vehicleById = new HashMap<>();
+    private List<VehicleWrapper> deadVehicles = new ArrayList<>();
 
     public UnitManager(MyStrategy mys) {
 
@@ -21,7 +21,7 @@ public class UnitManager {
 
     public void initializeTick() {
         for (Vehicle vehicle : mys.world.getNewVehicles()) {
-            MyVehicle mv = new MyVehicle(vehicle, mys.world);
+            VehicleWrapper mv = new VehicleWrapper(vehicle, mys.world);
             vehicleById.put(vehicle.getId(), mv);
         }
 
@@ -29,21 +29,21 @@ public class UnitManager {
             long vehicleId = vehicleUpdate.getId();
 
             if (vehicleUpdate.getDurability() == 0) {
-                MyVehicle deadVehicle = vehicleById.get(vehicleId);
+                VehicleWrapper deadVehicle = vehicleById.get(vehicleId);
                 deadVehicles.add(deadVehicle);
             } else {
-                MyVehicle myVehicle = vehicleById.get(vehicleId);
+                VehicleWrapper myVehicle = vehicleById.get(vehicleId);
                 myVehicle.update(new Vehicle(myVehicle.v, vehicleUpdate));
             }
         }
     }
 
-    public MyVehicle get(long id) {
+    public VehicleWrapper get(long id) {
         return vehicleById.get(id);
     }
 
-    Stream<MyVehicle> streamVehicles(Ownership ownership, VehicleType vehicleType) {
-        Stream<MyVehicle> stream = vehicleById.values().stream();
+    Stream<VehicleWrapper> streamVehicles(Ownership ownership, VehicleType vehicleType) {
+        Stream<VehicleWrapper> stream = vehicleById.values().stream();
 
         switch (ownership) {
             case ALLY:
@@ -62,11 +62,11 @@ public class UnitManager {
         return stream;
     }
 
-    Stream<MyVehicle> streamVehicles(Ownership ownership) {
+    Stream<VehicleWrapper> streamVehicles(Ownership ownership) {
         return streamVehicles(ownership, null);
     }
 
-    private Stream<MyVehicle> streamVehicles() {
+    private Stream<VehicleWrapper> streamVehicles() {
         return streamVehicles(Ownership.ANY);
     }
 
