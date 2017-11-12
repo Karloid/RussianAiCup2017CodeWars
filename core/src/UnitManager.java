@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class UnitManager {
@@ -16,6 +17,8 @@ public class UnitManager {
 
     TickStats myStats;
     TickStats enemyStats;
+    private List<VehicleWrapper> cachedMy;
+    private List<VehicleWrapper> cachedEnemy;
 
 
     public UnitManager(MyStrategy mys) {
@@ -24,6 +27,8 @@ public class UnitManager {
     }
 
     public void initializeTick() {
+        cachedMy = null;
+        cachedEnemy = null;
 
         myStats = new TickStats();
         enemyStats = new TickStats();
@@ -75,10 +80,16 @@ public class UnitManager {
 
         switch (ownership) {
             case ALLY:
-                stream = stream.filter(vehicle -> vehicle.v.getPlayerId() == mys.me.getId());
+                if (cachedMy == null) {
+                    cachedMy = stream.filter(vehicle -> !vehicle.isEnemy).collect(Collectors.toList());
+                }
+                stream = cachedMy.stream();
                 break;
             case ENEMY:
-                stream = stream.filter(vehicle -> vehicle.v.getPlayerId() != mys.me.getId());
+                if (cachedEnemy == null) {
+                    cachedEnemy = stream.filter(vehicle -> vehicle.isEnemy).collect(Collectors.toList());
+                }
+                stream = cachedEnemy.stream();
                 break;
             default:
         }
