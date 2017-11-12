@@ -66,7 +66,7 @@ public class UnitManager {
         return streamVehicles(ownership, null);
     }
 
-    private Stream<VehicleWrapper> streamVehicles() {
+    Stream<VehicleWrapper> streamVehicles() {
         return streamVehicles(Ownership.ANY);
     }
 

@@ -12,6 +12,7 @@ public class NuclearStrike {
     public int scheduledAt;
     public int startedAt = -1;
     public Point2D actualTarget;
+    public int actualDmg;
 
     public NuclearStrike(VehicleWrapper myVehicle, VehicleWrapper target, MyStrategy myStrategy) {
         this.myVehicle = myVehicle;
@@ -21,16 +22,25 @@ public class NuclearStrike {
         //TODO calc dmg
         double maxDmg = myStrategy.game.getMaxTacticalNuclearStrikeDamage();
         double maxRadius = myStrategy.game.getTacticalNuclearStrikeRadius();
-        dmg = myStrategy.um.streamVehicles(Ownership.ENEMY)
-                .mapToDouble(enemyVeh -> {
-                    double distanceTo = enemyVeh.getDistanceToPredictBoth(target, PREDICTION_TICK);
+
+        long myId = myStrategy.me.getId();
+
+
+        dmg = myStrategy.um.streamVehicles()
+                .mapToDouble(veh -> {
+                    double distanceTo = veh.getDistanceToPredictBoth(target, PREDICTION_TICK);
+
                     if (distanceTo > maxRadius) {
                         return 0;
                     }
 
                     double dmg = (1 - distanceTo / maxRadius) * maxDmg;
-                    if (dmg > enemyVeh.v.getDurability()) {
+                    if (dmg > veh.v.getDurability()) {
                         dmg = dmg + 20;
+                    }
+                    boolean isEnemy = veh.v.getPlayerId() != myId;
+                    if (!isEnemy) {
+                        dmg = dmg * -1.5;
                     }
                     return dmg;
                 }).sum();

@@ -34,6 +34,7 @@ public final class MyStrategy implements Strategy {
     UnitManager um = new UnitManager(this);
     private NuclearStrike scheduledStrike;
     private long elapsed;
+    private List<NuclearStrike> didNuclearStrikes = new ArrayList<>();
 
     @Override
     public void move(Player me, World world, Game game, Move move) {
@@ -63,11 +64,28 @@ public final class MyStrategy implements Strategy {
         if (world.getTickIndex() == 19_999) {
             log("time taken total: " + elapsed);
         }
+
+        if (world.getTickIndex() % 3000 == 0) {
+            printNuclearStats();
+        }
+    }
+
+    private void printNuclearStats() {
+        for (NuclearStrike didNuclearStrike : didNuclearStrikes) {
+            log(NUCLEAR_STRIKE + " did " + didNuclearStrike);
+        }
+        log(NUCLEAR_STRIKE+ " stats: count: " +  didNuclearStrikes.size() + " succeed: unknown" + 0);
     }
 
     private void doConstantPart() {
         if (scheduledStrike != null) {
-            //log(NUCLEAR_STRIKE + " moving of targeting vehicle " + scheduledStrike.myVehicle.getMoveVector());
+            if (scheduledStrike.startedAt != -1 && world.getTickIndex() > scheduledStrike.startedAt + 30) {
+                log(NUCLEAR_STRIKE + " was done " + scheduledStrike);
+
+                scheduledStrike.actualDmg = 0; //TODO
+                didNuclearStrikes.add(scheduledStrike);
+                scheduledStrike = null;
+            }
         }
     }
 
@@ -122,20 +140,13 @@ public final class MyStrategy implements Strategy {
         // Каждые 300 тиков ...
         // ... для каждого типа техники ...
 
-        if (scheduledStrike != null) {
-            if (scheduledStrike.startedAt != -1 && world.getTickIndex() > scheduledStrike.startedAt + 30) {
-                log(NUCLEAR_STRIKE + " was done " + scheduledStrike);
-                scheduledStrike = null;
-            }
-        }
-
         enemyGroups = getGroups(Ownership.ENEMY);
         refreshGroups(myGroups);
 
         if (me.getRemainingNuclearStrikeCooldownTicks() == 0 && scheduledStrike == null) {
             NuclearStrike max = NuclearStrike.getMaxDmg(this);
 
-            if (max != null && max.dmg > 50) {
+            if (max != null && max.dmg > 400) {
                 delayedMoves.clear();
                 scheduledStrike = max;
                 scheduledStrike.scheduledAt = world.getTickIndex();
