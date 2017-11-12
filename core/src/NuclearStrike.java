@@ -1,3 +1,5 @@
+import model.VehicleType;
+
 import java.util.Comparator;
 
 public class NuclearStrike {
@@ -38,6 +40,11 @@ public class NuclearStrike {
                     if (dmg > veh.v.getDurability()) {
                         dmg = dmg + 20;
                     }
+
+                    if (veh.v.getType() == VehicleType.ARRV) {
+                        dmg *= 0.7f;
+                    }
+                    
                     boolean isEnemy = veh.v.getPlayerId() != myId;
                     if (!isEnemy) {
                         dmg = dmg * -1.5;

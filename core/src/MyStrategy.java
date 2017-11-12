@@ -65,7 +65,7 @@ public final class MyStrategy implements Strategy {
             log("time taken total: " + elapsed);
         }
 
-        if (world.getTickIndex() % 3000 == 0) {
+        if (world.getTickIndex() % 2000 == 0) {
             printNuclearStats();
         }
     }
