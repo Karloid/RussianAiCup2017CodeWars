@@ -12,6 +12,7 @@ public class VehicleGroupInfo {
     public int moveToPointAt;
     public PointsInfo pointsInfo;
     public List<VehicleWrapper> vehicles = new ArrayList<>();
+    public int lastShrinkI;
 
     public VehicleGroupInfo(Ownership ownership, VehicleType vehicleType, MyStrategy myStrategy) {
         this.ownership = ownership;
@@ -36,6 +37,11 @@ public class VehicleGroupInfo {
     public boolean isMovingToPoint() {
         return moveToPoint != null && (moveToPoint.getDistanceTo(getAveragePoint()) > 20
                 || pointsInfo.rect.getWidth() > 53
-                || pointsInfo.rect.getHeight() > 53) &&  myStrategy.um.getMinTimeWithoutUpdates(this) < 120; //TODO check size
+                || pointsInfo.rect.getHeight() > 53) && myStrategy.um.getMinTimeWithoutUpdates(this) < 120; //TODO check size
     }
+
+    public boolean itsTooBig() {
+        return pointsInfo != null && (pointsInfo.rect.getHeight() > 100 || pointsInfo.rect.getWidth() > 100);
+    }
+
 }
