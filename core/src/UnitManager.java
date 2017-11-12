@@ -44,7 +44,7 @@ public class UnitManager {
             if (vehicleUpdate.getDurability() == 0) {
                 VehicleWrapper deadVehicle = vehicleById.get(vehicleId);
                 deadVehicles.add(deadVehicle);
-                vehicleById.remove(deadVehicle);
+                vehicleById.remove(deadVehicle.v.getId());
             } else {
                 VehicleWrapper veh = vehicleById.get(vehicleId);
                 veh.update(new Vehicle(veh.v, vehicleUpdate));
