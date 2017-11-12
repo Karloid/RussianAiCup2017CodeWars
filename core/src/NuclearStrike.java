@@ -10,7 +10,7 @@ public class NuclearStrike {
     /**
      * or points
      */
-    public final double predictedDmg;
+    public double predictedDmg;
     public int createdAt;
     public int startedAt = -1;
     public Point2D actualTarget;
@@ -19,12 +19,16 @@ public class NuclearStrike {
     public TickStats myStats;
     public TickStats enemyStats;
     public boolean succeed;
+    public boolean canceled;
 
     public NuclearStrike(VehicleWrapper myVehicle, VehicleWrapper target, MyStrategy myStrategy) {
         this.myVehicle = myVehicle;
         this.target = target;
         this.myStrategy = myStrategy;
+        calcPredicted(myVehicle, target, myStrategy);
+    }
 
+    private void calcPredicted(VehicleWrapper myVehicle, VehicleWrapper target, MyStrategy myStrategy) {
         //TODO calc predictedDmg
         double maxDmg = myStrategy.game.getMaxTacticalNuclearStrikeDamage();
         double maxRadius = myStrategy.game.getTacticalNuclearStrikeRadius();
@@ -39,7 +43,12 @@ public class NuclearStrike {
 
         predictedDmg = myStrategy.um.streamVehicles()
                 .mapToDouble(veh -> {
-                    double distanceTo = veh.getDistanceToPredictBoth(target, PREDICTION_TICK);
+                    double distanceTo;
+                    if (actualTarget != null) {
+                        distanceTo = veh.getPos(PREDICTION_TICK).getDistanceTo(actualTarget);
+                    } else {
+                        distanceTo = veh.getDistanceToPredictBoth(target, PREDICTION_TICK);
+                    }
 
                     if (distanceTo > maxRadius) {
                         return 0;
@@ -75,7 +84,7 @@ public class NuclearStrike {
         sb.append(", myVehicleDidSurvive=").append(myVehicleDidSurvive);
         sb.append(", myStats=").append(myStats);
         sb.append(", enemyStats=").append(enemyStats);
-        sb.append(", SUCCEED=").append(succeed);
+        sb.append(", ").append(canceled ? "CANCELED" : succeed ? "SUCCEED" : "FAILED");
         sb.append('}');
         return sb.toString();
     }
@@ -87,7 +96,7 @@ public class NuclearStrike {
                                 .filter(myVehicle ->
                                         myVehicle.getDistanceToPredictTarget(v, PREDICTION_TICK) < myVehicle.v.getVisionRange())
                                 .map(myVehicle -> new NuclearStrike(myVehicle, v, mys)))
-                                .filter(nuclearStrike -> nuclearStrike.predictedDmg > MyStrategy.MIN_NUCLEAR_DMG)
+                .filter(nuclearStrike -> nuclearStrike.predictedDmg > MyStrategy.MIN_NUCLEAR_DMG)
                 .max(Comparator.comparingDouble(o -> o.predictedDmg))
                 .orElse(null);
     }
@@ -104,5 +113,9 @@ public class NuclearStrike {
         }
         myStrategy.didNuclearStrikes.add(this);
         myStrategy.log(MyStrategy.NUCLEAR_STRIKE + " was done " + this);
+    }
+
+    public void recalcPredicted() {
+
     }
 }

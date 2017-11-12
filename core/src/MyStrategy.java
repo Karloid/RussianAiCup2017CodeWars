@@ -75,13 +75,18 @@ public final class MyStrategy implements Strategy {
 
     private void printNuclearStats() {
         int succeed = 0;
+        int canceled = 0;
         for (NuclearStrike didNuclearStrike : didNuclearStrikes) {
             log(NUCLEAR_STRIKE + " did " + didNuclearStrike);
             if (didNuclearStrike.succeed) {
                 succeed++;
+
+            }
+            if (didNuclearStrike.canceled) {
+                canceled++;
             }
         }
-        log(NUCLEAR_STRIKE + " stats: count: " + didNuclearStrikes.size() + " succeed: " + succeed);
+        log(NUCLEAR_STRIKE + " stats: count: " + didNuclearStrikes.size() + " succeed: " + succeed + " canceled: " + canceled);
     }
 
     private void doConstantPart() {
@@ -154,6 +159,7 @@ public final class MyStrategy implements Strategy {
      * Основная логика нашей стратегии.
      */
     private void oldMove() {
+        //TODO fix bug: a lot of nuclear strikes not fire
         // Каждые 300 тиков ...
         // ... для каждого типа техники ...
 
@@ -192,8 +198,14 @@ public final class MyStrategy implements Strategy {
                         max.actualTarget = new Point2D(max.myVehicle.getX(0) + vector.getX() * k, max.myVehicle.getY(0) + vector.getY() * k);
                         log(NUCLEAR_STRIKE + " correct point to " + max.actualTarget + " distance is " + max.actualTarget.getDistanceTo(max.myVehicle) + " maxDistance: " + maxDistance);
                     }
-                    //TODO recalc dmg if it low then cancel and find other target?
-
+                    max.recalcPredicted();
+                    if (max.predictedDmg < MIN_NUCLEAR_DMG) {
+                        log(NUCLEAR_STRIKE + " find new target or cancel");
+                        scheduledStrike.finish();
+                        scheduledStrike.canceled = true;
+                        didNuclearStrikes.add(scheduledStrike);
+                        scheduledStrike = null;
+                    }
 
                     move1.setAction(ActionType.TACTICAL_NUCLEAR_STRIKE);
                     move1.setVehicleId(max.myVehicle.v.getId());
@@ -326,6 +338,7 @@ public final class MyStrategy implements Strategy {
         }*/
         // Если ни один наш юнит не мог двигаться в течение 60 тиков ...
         //TODO check moveToPointAt for detecting stuck
+/*
         if (world.getTickIndex() > 1000 && false) {
             long allUnits = um.streamVehicles(Ownership.ALLY).count();
             float notUpdatedUnits = um.streamVehicles(Ownership.ALLY).filter(vehicle -> world.getTickIndex() - um.get(vehicle.v.getId()).movedAt > 60).count() * 1f;
@@ -338,6 +351,7 @@ public final class MyStrategy implements Strategy {
                 scheduleMoveToPoint(group, centerPoint);
             }
         }
+*/
     }
 
     private void clearAndSelectOneUnit(NuclearStrike max, Move move1, VehicleWrapper unit) {
