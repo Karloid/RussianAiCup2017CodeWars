@@ -33,9 +33,11 @@ public final class MyStrategy implements Strategy {
 
     UnitManager um = new UnitManager(this);
     private NuclearStrike scheduledStrike;
+    private long elapsed;
 
     @Override
     public void move(Player me, World world, Game game, Move move) {
+        long start = System.currentTimeMillis();
         initializeTick(me, world, game, move);
         initializeStrategy(world, game);
 
@@ -43,18 +45,24 @@ public final class MyStrategy implements Strategy {
         doConstantPart();
 
         if (me.getRemainingActionCooldownTicks() > 0) {
-            return;
-        }
-
-        if (executeDelayedMove()) {
+            //nothing
+        } else if (executeDelayedMove()) {
             delayedMovesSize();
-            return;
+        } else {
+            oldMove();
+
+            executeDelayedMove();
+            delayedMovesSize();
         }
 
-        oldMove();
-
-        executeDelayedMove();
-        delayedMovesSize();
+        long timeTaken = System.currentTimeMillis() - start;
+        elapsed += timeTaken;
+        if (timeTaken > 400) {
+            log("too much work " + timeTaken);
+        }
+        if (world.getTickIndex() == 19_999) {
+            log("time taken total: " + elapsed);
+        }
     }
 
     private void doConstantPart() {
