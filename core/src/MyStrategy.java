@@ -181,19 +181,22 @@ public final class MyStrategy implements Strategy {
                     log(NUCLEAR_STRIKE + " stop unit " + max);
                 });
                 delayedMoves.add(move1 -> {
-                    move1.setAction(ActionType.TACTICAL_NUCLEAR_STRIKE);
-                    move1.setVehicleId(max.myVehicle.v.getId());
-
-                    max.actualTarget = max.target.getPos(30);
+                    max.actualTarget = max.target.getPos(game.getTacticalNuclearStrikeDelay());
                     double distance = max.actualTarget.getDistanceTo(max.myVehicle);
-                    if (distance > max.myVehicle.v.getVisionRange()) {
-                        log(NUCLEAR_STRIKE + " correct point from " + max.actualTarget);
+                    double maxDistance = max.myVehicle.v.getVisionRange() - 10;
+                    if (distance > maxDistance) {
+                        log(NUCLEAR_STRIKE + " correct point from " + max.actualTarget + " distance is " + max.actualTarget.getDistanceTo(max.myVehicle) + " maxDistance: " + maxDistance);
                         Point2D vector = Point2D.vector(max.myVehicle.getX(), max.myVehicle.getY(), max.actualTarget.getX(), max.actualTarget.getY());
 
-                        double k = distance / max.myVehicle.v.getVisionRange();
+                        double k = maxDistance / distance;
                         max.actualTarget = new Point2D(max.myVehicle.getX(0) + vector.getX() * k, max.myVehicle.getY(0) + vector.getY() * k);
-                        log(NUCLEAR_STRIKE + " correct point to " + max.actualTarget);
+                        log(NUCLEAR_STRIKE + " correct point to " + max.actualTarget + " distance is " + max.actualTarget.getDistanceTo(max.myVehicle) + " maxDistance: " + maxDistance);
                     }
+                    //TODO recalc dmg if it low then cancel and find other target?
+
+
+                    move1.setAction(ActionType.TACTICAL_NUCLEAR_STRIKE);
+                    move1.setVehicleId(max.myVehicle.v.getId());
 
                     move1.setX(max.actualTarget.getX());
                     move1.setY(max.actualTarget.getY());
