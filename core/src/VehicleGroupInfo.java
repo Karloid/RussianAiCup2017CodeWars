@@ -4,12 +4,12 @@ public class VehicleGroupInfo {
     final VehicleType vehicleType; //just testing
     private MyStrategy myStrategy;
     public int count;
-    public MyStrategy.Ownership ownership;
+    public Ownership ownership;
     public Point2D moveToPoint;
     public int moveToPointAt;
     public PointsInfo pointsInfo;
 
-    public VehicleGroupInfo(MyStrategy.Ownership ownership, VehicleType vehicleType, MyStrategy myStrategy) {
+    public VehicleGroupInfo(Ownership ownership, VehicleType vehicleType, MyStrategy myStrategy) {
         this.ownership = ownership;
         this.vehicleType = vehicleType;
         this.myStrategy = myStrategy;
@@ -32,6 +32,6 @@ public class VehicleGroupInfo {
     public boolean isMovingToPoint() {
         return moveToPoint != null && (moveToPoint.getDistanceTo(getAveragePoint()) > 20
                 || pointsInfo.rect.getWidth() > 53
-                || pointsInfo.rect.getHeight() > 53) &&  myStrategy.getMinTimeWithoutUpdates(this) < 120; //TODO check size
+                || pointsInfo.rect.getHeight() > 53) &&  myStrategy.um.getMinTimeWithoutUpdates(this) < 120; //TODO check size
     }
 }

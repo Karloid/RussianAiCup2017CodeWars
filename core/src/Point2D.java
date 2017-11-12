@@ -15,7 +15,7 @@ public final class Point2D {
     @Override
     public String toString() {
         return
-                "x=" + Utils.format(x)+
+                "x=" + Utils.format(x) +
                         ", y=" + Utils.format(y);
     }
 
@@ -62,7 +62,6 @@ public final class Point2D {
         Point2D point2D = (Point2D) o;
 
         return Integer.compare(point2D.getIntX(), getIntX()) == 0 && Integer.compare(point2D.getIntY(), getIntY()) == 0;
-
     }
 
     @Override
@@ -74,5 +73,9 @@ public final class Point2D {
         temp = Double.doubleToLongBits(y);
         result = 31 * result + (int) (temp ^ (temp >>> 32));
         return result;
+    }
+
+    public static Point2D vector(double fromX, double fromY, double toX, double toY) {
+        return new Point2D(toX - fromX, toY - fromY);
     }
 }

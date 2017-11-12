@@ -2,7 +2,6 @@ import model.*;
 
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 import static model.VehicleType.*;
 
@@ -20,17 +19,18 @@ public final class MyStrategy implements Strategy {
     private TerrainType[][] terrainTypeByCellXY;
     private WeatherType[][] weatherTypeByCellXY;
 
-    private Player me;
-    private World world;
+    Player me;
+    World world;
     private Game game;
     private Move move;
 
-    private final Map<Long, Vehicle> vehicleById = new HashMap<>();
-    private final Map<Long, Integer> updateTickByVehicleId = new HashMap<>();
+
     private final Queue<Consumer<Move>> delayedMoves = new ArrayDeque<>();
     private Point2D centerPoint;
     private List<VehicleGroupInfo> enemyGroups;
     private List<VehicleGroupInfo> myGroups;
+
+    UnitManager um = new UnitManager(this);
 
     @Override
     public void move(Player me, World world, Game game, Move move) {
@@ -46,7 +46,7 @@ public final class MyStrategy implements Strategy {
             return;
         }
 
-        move();
+        oldMove();
 
         executeDelayedMove();
         delayedMovesSize();
@@ -78,22 +78,7 @@ public final class MyStrategy implements Strategy {
         this.game = game;
         this.move = move;
 
-        for (Vehicle vehicle : world.getNewVehicles()) {
-            vehicleById.put(vehicle.getId(), vehicle);
-            updateTickByVehicleId.put(vehicle.getId(), world.getTickIndex());
-        }
-
-        for (VehicleUpdate vehicleUpdate : world.getVehicleUpdates()) {
-            long vehicleId = vehicleUpdate.getId();
-
-            if (vehicleUpdate.getDurability() == 0) {
-                vehicleById.remove(vehicleId);
-                updateTickByVehicleId.remove(vehicleId);
-            } else {
-                vehicleById.put(vehicleId, new Vehicle(vehicleById.get(vehicleId), vehicleUpdate));
-                updateTickByVehicleId.put(vehicleId, world.getTickIndex());
-            }
-        }
+        um.initializeTick();
     }
 
     /**
@@ -114,18 +99,21 @@ public final class MyStrategy implements Strategy {
     /**
      * Основная логика нашей стратегии.
      */
-    private void move() {
+    private void oldMove() {
         // Каждые 300 тиков ...
         // ... для каждого типа техники ...
 
         enemyGroups = getGroups(Ownership.ENEMY);
-
         refreshGroups(myGroups);
+
+        if (me.getRemainingNuclearStrikeCooldownTicks() == 0) {
+            //streamVehicles(Ownership.ENEMY).map(v -> {}).filter()
+        }
+
 
         log("Schedule new moves");
 
         boolean isArrvMoving = world.getTickIndex() < 200;
-
         for (VehicleGroupInfo myGroup : myGroups) {
 
             if (myGroup.isMovingToPoint()) {
@@ -234,8 +222,8 @@ public final class MyStrategy implements Strategy {
         // Если ни один наш юнит не мог двигаться в течение 60 тиков ...
         //TODO check moveToPointAt for detecting stuck
         if (world.getTickIndex() > 1000 && false) {
-            long allUnits = streamVehicles(Ownership.ALLY).count();
-            float notUpdatedUnits = streamVehicles(Ownership.ALLY).filter(vehicle -> world.getTickIndex() - updateTickByVehicleId.get(vehicle.getId()) > 60).count() * 1f;
+            long allUnits = um.streamVehicles(Ownership.ALLY).count();
+            float notUpdatedUnits = um.streamVehicles(Ownership.ALLY).filter(vehicle -> world.getTickIndex() - um.get(vehicle.v.getId()).movedAt > 60).count() * 1f;
             if (notUpdatedUnits / allUnits > 0.5) {
                 /// ... находим центр нашей формации ...
                 log("We stuck " + notUpdatedUnits);
@@ -321,7 +309,7 @@ public final class MyStrategy implements Strategy {
         if (myGroup.vehicleType == IFV) {
             move.setMaxSpeed(game.getTankSpeed() * 0.6);
         }
-        log("move to point " + p + " group " + myGroup);
+        log("oldMove to point " + p + " group " + myGroup);
         myGroup.moveToPoint = p;
         myGroup.moveToPointAt = world.getTickIndex();
     }
@@ -364,10 +352,10 @@ public final class MyStrategy implements Strategy {
 
     private VehicleGroupInfo getGroup(Ownership ownership, VehicleType vehicleType) {
         VehicleGroupInfo info = new VehicleGroupInfo(ownership, vehicleType, this);
-        PointsInfo pointsInfo = streamVehicles(ownership, vehicleType)
+        PointsInfo pointsInfo = um.streamVehicles(ownership, vehicleType)
                 .map(vehicle -> {
                     info.count++;
-                    return new Point2D(vehicle.getX(), vehicle.getY());
+                    return new Point2D(vehicle.v.getX(), vehicle.v.getY());
                 })
                 .collect(Utils.POINT_COLLECTOR);
         info.pointsInfo = pointsInfo;
@@ -396,48 +384,9 @@ public final class MyStrategy implements Strategy {
         }
     }
 
-    private Stream<Vehicle> streamVehicles(Ownership ownership, VehicleType vehicleType) {
-        Stream<Vehicle> stream = vehicleById.values().stream();
-
-        switch (ownership) {
-            case ALLY:
-                stream = stream.filter(vehicle -> vehicle.getPlayerId() == me.getId());
-                break;
-            case ENEMY:
-                stream = stream.filter(vehicle -> vehicle.getPlayerId() != me.getId());
-                break;
-            default:
-        }
-
-        if (vehicleType != null) {
-            stream = stream.filter(vehicle -> vehicle.getType() == vehicleType);
-        }
-
-        return stream;
-    }
-
-    private Stream<Vehicle> streamVehicles(Ownership ownership) {
-        return streamVehicles(ownership, null);
-    }
-
-    private Stream<Vehicle> streamVehicles() {
-        return streamVehicles(Ownership.ANY);
-    }
-
     static double distanceTo(int xxxx, int yyyy) {
         return StrictMath.hypot(xxxx, yyyy);
     }
 
-    public int getMinTimeWithoutUpdates(VehicleGroupInfo vehicleGroupInfo) {
-        return streamVehicles(vehicleGroupInfo.ownership, vehicleGroupInfo.vehicleType)
-                .mapToInt(v -> world.getTickIndex() - updateTickByVehicleId.get(v.getId()))
-                .min().orElse(0);
-    }
 
-
-    enum Ownership {
-        ANY,
-        ALLY,
-        ENEMY
-    }
 }
