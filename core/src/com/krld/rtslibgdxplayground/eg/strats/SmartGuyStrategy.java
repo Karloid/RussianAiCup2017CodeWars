@@ -32,7 +32,7 @@ public class SmartGuyStrategy implements Strategy {
     public static int[][] shootingMatrix;
     public static int[][] grenadeDamage;
     private int captainId;
-    private static ArrayList<Point> movePoints;
+    private static ArrayList<Vector> movePoints;
     private static int movePointIndex = 0;
 
     private static Set<Unit> targets;
@@ -86,7 +86,7 @@ public class SmartGuyStrategy implements Strategy {
         }
         if (moveTarget != null) {
             move.setAction(ActionType.MOVE);
-            moveReal(new Point(moveTarget), 0, 0, false, true);
+            moveReal(new Vector(moveTarget), 0, 0, false, true);
             return true;
         }
         return false;
@@ -129,10 +129,10 @@ public class SmartGuyStrategy implements Strategy {
 
 
     private void setFirstMoveIndex() {
-        Point tmpPoint = null;
-        for (Point point : movePoints) {
-            if ((tmpPoint == null || world.getDistance(point, new Point(world.getUnits().get(0))) <
-                    world.getDistance(tmpPoint, new Point(world.getUnits().get(0))))
+        Vector tmpPoint = null;
+        for (Vector point : movePoints) {
+            if ((tmpPoint == null || world.getDistance(point, new Vector(world.getUnits().get(0))) <
+                    world.getDistance(tmpPoint, new Vector(world.getUnits().get(0))))
                 //   && movePoints.indexOf(point) != movePoints.size() -1
                 //   && getDistance(point, new Point(troopers[0])) > 4
                     ) {
@@ -193,7 +193,7 @@ public class SmartGuyStrategy implements Strategy {
             }
             if (unitToHeal != null) {
                 move.setAction(ActionType.MOVE);
-                moveReal(new Point(unitToHeal),0,0,false, true);
+                moveReal(new Vector(unitToHeal),0,0,false, true);
           //      log("move to heal target");
                 return true;
             }
@@ -223,7 +223,7 @@ public class SmartGuyStrategy implements Strategy {
         } else {
             for (Unit unit : units) {
                 if (unit.getId() == captainId) {
-                    moveReal(world.getFreePointNear(new Point(unit)), 10, 0, true, false);
+                    moveReal(world.getFreePointNear(new Vector(unit)), 10, 0, true, false);
                     break;
                 }
             }
@@ -234,7 +234,7 @@ public class SmartGuyStrategy implements Strategy {
     }
 
     private void moveActionCaptain() {
-        if (world.getDistance(new Point(self), movePoints.get(movePointIndex)) < DISTANCE_TO_WAYPOINT) {
+        if (world.getDistance(new Vector(self), movePoints.get(movePointIndex)) < DISTANCE_TO_WAYPOINT) {
             if (Math.random() > 0.5f)
                 movePointIndex++;
             else
@@ -247,15 +247,15 @@ public class SmartGuyStrategy implements Strategy {
 
         //moveReal(movePoints.get(movePointIndex), 1, 0);
 
-        moveReal(new Point(self), 0, 0, false, false);
+        moveReal(new Vector(self), 0, 0, false, false);
         if (path[movePoints.get(movePointIndex).x][movePoints.get(movePointIndex).y] != 999) {
             moveReal(movePoints.get(movePointIndex), 0, 0, true, false);
         } else {
-            Point point = null;
+            Vector point = null;
             for (int x = 0; x < world.getWidth(); x++) {
                 for (int y = 0; y < world.getHeight(); y++) {
                     if (path[x][y] != 999) {
-                        Point currentPoint = new Point(x, y);
+                        Vector currentPoint = new Vector(x, y);
                         if (point == null || world.getDistance(currentPoint, movePoints.get(movePointIndex))
                                 < world.getDistance(point, movePoints.get(movePointIndex))) {
                             point = currentPoint;
@@ -279,7 +279,7 @@ public class SmartGuyStrategy implements Strategy {
     }
 
 
-    private int moveReal(Point point, int distance, int safeWay, boolean fastFind, boolean instantFind) {
+    private int moveReal(Vector point, int distance, int safeWay, boolean fastFind, boolean instantFind) {
         if (!instantFind && path != null && Math.random() > 0.5) {
             return 0;
         }
@@ -472,13 +472,13 @@ public class SmartGuyStrategy implements Strategy {
     }
 
     private void initWayPoints() {
-        movePoints = new ArrayList<Point>();
+        movePoints = new ArrayList<Vector>();
 
         System.out.println("NORMAL MAP");
-        movePoints.add(new Point(0, world.getHeight() - 1));
-        movePoints.add(new Point(0, 0));
-        movePoints.add(new Point(world.getWidth() - 1, 0));
-        movePoints.add(new Point(world.getWidth() - 1, world.getHeight() - 1));
+        movePoints.add(new Vector(0, world.getHeight() - 1));
+        movePoints.add(new Vector(0, 0));
+        movePoints.add(new Vector(world.getWidth() - 1, 0));
+        movePoints.add(new Vector(world.getWidth() - 1, world.getHeight() - 1));
         //   movePoints.add(new Point(world.getWidth() / 2, world.getHeight() / 2));
 
     }

@@ -98,4 +98,8 @@ public final class Point2D {
     public double getDistanceTo(VehicleWrapper myVehicle) {
         return getDistanceTo(myVehicle.v);
     }
+
+    public Point2D add(double x, double y) {
+        return new Point2D(this.x + x, this.y + y);
+    }
 }

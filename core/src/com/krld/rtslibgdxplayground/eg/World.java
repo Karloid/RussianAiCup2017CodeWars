@@ -1,6 +1,7 @@
 package com.krld.rtslibgdxplayground.eg;
 
 import com.krld.rtslibgdxplayground.eg.models.*;
+import com.krld.rtslibgdxplayground.eg.models.Vector;
 
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
@@ -93,7 +94,7 @@ public class World {
     }
 
     private void handleHeal(Unit unit, Move move) {
-        Point point = getPointOnDirection(new Point(unit), move.getDirection());
+        Vector point = getPointOnDirection(new Vector(unit), move.getDirection());
         if (inFrame(point)) {
             for (Unit unit1 : units) {
                 if (unit1.getX() == point.x && unit1.getY() == point.y) {
@@ -104,11 +105,11 @@ public class World {
         }
     }
 
-    private boolean inFrame(Point point) {
+    private boolean inFrame(Vector point) {
         return inFrame(point.x, point.y);
     }
 
-    public Point getPointOnDirection(Point point, Direction direction) {
+    public Vector getPointOnDirection(Vector point, Direction direction) {
         if (direction == Direction.CURRENT_CELL) {
             return point;
         }
@@ -267,7 +268,7 @@ public class World {
 
     private void addUnits(int x, int y, int count, Player player) {
         for (int i = 0; i <= count; i++) {
-            Point point = getFreePointNear(x, y);
+            Vector point = getFreePointNear(x, y);
             if (point == null) return;
             if (i % 6 == 0)
                 units.add(new Unit(point.x, point.y, player, UnitType.MEDIC));
@@ -277,8 +278,8 @@ public class World {
 
     }
 
-    public Point getFreePointNear(int x, int y) {
-        Point point = null;
+    public Vector getFreePointNear(int x, int y) {
+        Vector point = null;
 
         for (int x1 = 0; x1 < width; x1++)
             for (int y1 = 0; y1 < height; y1++) {
@@ -291,7 +292,7 @@ public class World {
                         }
                     }
                     if (noUnitsInCell)
-                        point = new Point(x1, y1);
+                        point = new Vector(x1, y1);
                 }
                 //  getCells()[x1][y1] = CellType.FREE;
             }
@@ -334,11 +335,11 @@ public class World {
         return moveCount;
     }
 
-    public Point getFreePointNear(Point point) {
+    public Vector getFreePointNear(Vector point) {
         return getFreePointNear(point.x, point.y);
     }
 
-    public double getDistance(Point point, Point point1) {
+    public double getDistance(Vector point, Vector point1) {
         return getDistance(point.x, point.y, point1.x, point1.y);
     }
 }

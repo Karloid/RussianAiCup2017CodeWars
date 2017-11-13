@@ -44,4 +44,21 @@ public class VehicleGroupInfo {
         return pointsInfo != null && (pointsInfo.rect.getHeight() > 100 || pointsInfo.rect.getWidth() > 100);
     }
 
+    public List<VehicleWrapper> countWillBeFurtherThenBefore(Point2D moveVector, Point2D target) {
+        List<VehicleWrapper> o = new ArrayList<>();
+
+        for (int i = 0; i < vehicles.size(); i++) {
+            VehicleWrapper vehicle = vehicles.get(i);
+
+            double before = target.getDistanceTo(vehicle) + MyStrategy.GROUP_SIZE;
+
+            Point2D newPos = moveVector.add(vehicle.v.getX(), vehicle.v.getY());
+            double after = target.getDistanceTo(newPos);
+            if (after > before) {
+                o.add(vehicle);
+            }
+
+        }
+        return o;
+    }
 }

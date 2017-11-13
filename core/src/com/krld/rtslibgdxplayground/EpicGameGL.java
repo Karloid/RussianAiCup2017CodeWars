@@ -244,7 +244,7 @@ public class EpicGameGL extends ApplicationAdapter implements UIDelegate {
                 g.line(move.getX() * CELL_SIZE + CELL_SIZE / 2, move.getY() * CELL_SIZE + CELL_SIZE / 2, unit.getX() * CELL_SIZE + CELL_SIZE / 2, unit.getY() * CELL_SIZE + CELL_SIZE / 2);
             } else if (move.getAction() == ActionType.HEAL) {
                 g.setColor(Color.GREEN);
-                com.krld.rtslibgdxplayground.eg.models.Point pointOnDirection = world.getPointOnDirection(new com.krld.rtslibgdxplayground.eg.models.Point(unit), move.getDirection());
+                Vector pointOnDirection = world.getPointOnDirection(new Vector(unit), move.getDirection());
                 g.line(pointOnDirection.x * CELL_SIZE + 2, pointOnDirection.y * CELL_SIZE + CELL_SIZE / 2 - 1, CELL_SIZE - 3, CELL_SIZE / 4);
             }
         }

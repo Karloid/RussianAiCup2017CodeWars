@@ -1,6 +1,6 @@
 package com.krld.rtslibgdxplayground.eg.models;
 
-public class Point {
+public class Vector {
     public int y;
     public int x;
 
@@ -9,13 +9,13 @@ public class Point {
         return "x: " + x + " y: " + y;
     }
 
-    public Point(int x, int y) {
+    public Vector(int x, int y) {
         this.x = x;
         this.y = y;
 
     }
 
-    public Point(Unit unit) {
+    public Vector(Unit unit) {
         x = unit.x;
         y = unit.y;
     }

@@ -87,7 +87,7 @@ public class NuclearStrike {
         sb.append(", myVehicleDidSurvive=").append(myVehicleDidSurvive);
         sb.append(", myStats=").append(myStats);
         sb.append(", enemyStats=").append(enemyStats);
-        sb.append(", ").append(canceled ? "CANCELED" : succeed ? "SUCCEED" : "FAILED");
+        sb.append(", ").append(canceled ? "CANCELED" : succeed ? "SUCCEED" :  actualTs == 0 ? "NOT_FIRED_YET" : "FAILED");
         sb.append('}');
         return sb.toString();
     }
@@ -115,7 +115,7 @@ public class NuclearStrike {
             succeed = true;
         }
         myStrategy.didNuclearStrikes.add(this);
-        myStrategy.log(MyStrategy.NUCLEAR_STRIKE + " was done " + this);
+        myStrategy.log(Utils.LOG_NUCLEAR_STRIKE + " was done " + this);
     }
 
     public void recalcPredicted() {

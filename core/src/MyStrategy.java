@@ -7,9 +7,8 @@ import static model.VehicleType.*;
 
 @SuppressWarnings({"UnsecureRandomNumberGeneration", "FieldCanBeLocal", "unused", "OverlyLongMethod"})
 public final class MyStrategy implements Strategy {
-    public static final double GROUP_SIZE = 48;
+    public static final double GROUP_SIZE = 50;
     public static final double GROUP_HALF_SIZE = GROUP_SIZE / 2;
-    public static final String NUCLEAR_STRIKE = "NUCLEAR_STRIKE";
     public static final int MIN_NUCLEAR_DMG = 500;
     private static int constantId;
 
@@ -128,7 +127,7 @@ public final class MyStrategy implements Strategy {
         int succeed = 0;
         int canceled = 0;
         for (NuclearStrike didNuclearStrike : didNuclearStrikes) {
-            log(NUCLEAR_STRIKE + " did " + didNuclearStrike);
+            log(Utils.LOG_NUCLEAR_STRIKE + " did " + didNuclearStrike);
             if (didNuclearStrike.succeed) {
                 succeed++;
 
@@ -137,17 +136,17 @@ public final class MyStrategy implements Strategy {
                 canceled++;
             }
         }
-        log(NUCLEAR_STRIKE + " stats: count: " + didNuclearStrikes.size() + " succeed: " + succeed + " canceled: " + canceled);
+        log(Utils.LOG_NUCLEAR_STRIKE + " stats: count: " + didNuclearStrikes.size() + " succeed: " + succeed + " canceled: " + canceled);
     }
 
     private void doConstantPart() {
         if (scheduledStrike != null) {
             Point2D mv = scheduledStrike.myVehicle.getMoveVector();
             if (mv != VehicleWrapper.NOT_MOVING) {
-                log(NUCLEAR_STRIKE + "!!! moving targeting unit" + mv);
+                log(Utils.LOG_NUCLEAR_STRIKE + "!!! moving targeting unit" + mv);
             }
 
-            log(NUCLEAR_STRIKE + String.format(" me.getNextNuclearStrikeTickIndex() %s x %s y %s id %s vehicle is %s ", me.getNextNuclearStrikeTickIndex(),
+            log(Utils.LOG_NUCLEAR_STRIKE + String.format(" me.getNextNuclearStrikeTickIndex() %s x %s y %s id %s vehicle is %s ", me.getNextNuclearStrikeTickIndex(),
                     me.getNextNuclearStrikeX(),
                     me.getNextNuclearStrikeY(),
                     me.getNextNuclearStrikeVehicleId(),
@@ -233,29 +232,29 @@ public final class MyStrategy implements Strategy {
                     clearAndSelectOneUnit(max, move1, max.myVehicle);  //TODO select group
 
                     scheduledStrike.createdAt = world.getTickIndex();
-                    log(NUCLEAR_STRIKE + " select unit " + max);
+                    log(Utils.LOG_NUCLEAR_STRIKE + " select unit " + max);
                 });
                 delayedMoves.add(move1 -> {
                     move.setAction(ActionType.MOVE);
                     move.setX(0);
                     move.setY(0);
-                    log(NUCLEAR_STRIKE + " stop unit " + max);
+                    log(Utils.LOG_NUCLEAR_STRIKE + " stop unit " + max);
                 });
                 delayedMoves.add(move1 -> {
                     max.actualTarget = max.target.getPos(game.getTacticalNuclearStrikeDelay());
                     double distance = max.actualTarget.getDistanceTo(max.myVehicle);
                     double maxDistance = max.myVehicle.v.getVisionRange() - 10;
                     if (distance > maxDistance) {
-                        log(NUCLEAR_STRIKE + " correct point from " + max.actualTarget + " distance is " + max.actualTarget.getDistanceTo(max.myVehicle) + " maxDistance: " + maxDistance);
+                        log(Utils.LOG_NUCLEAR_STRIKE + " correct point from " + max.actualTarget + " distance is " + max.actualTarget.getDistanceTo(max.myVehicle) + " maxDistance: " + maxDistance);
                         Point2D vector = Point2D.vector(max.myVehicle.getX(), max.myVehicle.getY(), max.actualTarget.getX(), max.actualTarget.getY());
 
                         double k = maxDistance / distance;
                         max.actualTarget = new Point2D(max.myVehicle.getX(0) + vector.getX() * k, max.myVehicle.getY(0) + vector.getY() * k);
-                        log(NUCLEAR_STRIKE + " correct point to " + max.actualTarget + " distance is " + max.actualTarget.getDistanceTo(max.myVehicle) + " maxDistance: " + maxDistance);
+                        log(Utils.LOG_NUCLEAR_STRIKE + " correct point to " + max.actualTarget + " distance is " + max.actualTarget.getDistanceTo(max.myVehicle) + " maxDistance: " + maxDistance);
                     }
                     max.recalcPredicted();
                     if (max.predictedDmg < MIN_NUCLEAR_DMG) {
-                        log(NUCLEAR_STRIKE + " find new target or cancel");
+                        log(Utils.LOG_NUCLEAR_STRIKE + " find new target or cancel");
                         scheduledStrike.finish();
                         scheduledStrike.canceled = true;
                         didNuclearStrikes.add(scheduledStrike);
@@ -270,7 +269,7 @@ public final class MyStrategy implements Strategy {
 
 
                     max.startedAt = world.getTickIndex();
-                    log(NUCLEAR_STRIKE + " start " + max);
+                    log(Utils.LOG_NUCLEAR_STRIKE + " start " + max);
                 });
                 return;
             }
@@ -409,10 +408,7 @@ public final class MyStrategy implements Strategy {
             } else {
                 scheduleSelectAll(myGroup.vehicleType);
 
-                Point2D movePoint = enemyGroup.getAveragePoint();
-                movePoint = normalize(movePoint);
-                Point2D finalMovePoint = movePoint;
-                scheduleMoveToPoint(myGroup, finalMovePoint);
+                scheduleMoveToPoint(myGroup, enemyGroup);
             }
         }
 
@@ -540,9 +536,23 @@ public final class MyStrategy implements Strategy {
                     (p.getY() - myGroup.getAveragePoint().getY()) * koeff + myGroup.getAveragePoint().getY());
         }
 
-        move.setAction(ActionType.MOVE);
-        move.setX(p.getX() - myGroup.getAveragePoint().getX());
-        move.setY(p.getY() - myGroup.getAveragePoint().getY());
+
+        double dx = p.getX() - myGroup.getAveragePoint().getX();
+        double dy = p.getY() - myGroup.getAveragePoint().getY();
+
+        List<VehicleWrapper> separatedVehicles = myGroup.countWillBeFurtherThenBefore(new Point2D(dx, dy), p);
+        if (separatedVehicles.size() > 0) {
+            log(Utils.LOG_MOVING + " found " + separatedVehicles.size() + " separated vehicles for " + myGroup);
+            move.setAction(ActionType.SCALE);
+            move.setX(p.getX());
+            move.setY(p.getY());
+            move.setFactor(0.1);
+        } else {
+            move.setAction(ActionType.MOVE);
+
+            move.setX(dx);
+            move.setY(dy);
+        }
         //TODO look at tanks group
         if (myGroup.vehicleType == IFV) {
             move.setMaxSpeed(game.getTankSpeed() * 0.6);
