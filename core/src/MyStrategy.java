@@ -147,6 +147,12 @@ public final class MyStrategy implements Strategy {
                 log(NUCLEAR_STRIKE + "!!! moving targeting unit" + mv);
             }
 
+            log(NUCLEAR_STRIKE + String.format(" me.getNextNuclearStrikeTickIndex() %s x %s y %s id %s vehicle is %s ", me.getNextNuclearStrikeTickIndex(),
+                    me.getNextNuclearStrikeX(),
+                    me.getNextNuclearStrikeY(),
+                    me.getNextNuclearStrikeVehicleId(),
+                    scheduledStrike.myVehicle.v.getDurability() > 0 ? "live" : "DEAD"));
+
             if (scheduledStrike.startedAt != -1 && world.getTickIndex() > scheduledStrike.startedAt + game.getTacticalNuclearStrikeDelay()) {
 
 
@@ -211,8 +217,6 @@ public final class MyStrategy implements Strategy {
      */
     private void oldMove() {
         //TODO fix bug: a lot of nuclear strikes not fire
-        // Каждые 300 тиков ...
-        // ... для каждого типа техники ...
 
         enemyGroups = getGroups(Ownership.ENEMY);
         refreshGroups(myGroups);
@@ -380,8 +384,8 @@ public final class MyStrategy implements Strategy {
 
                     scheduleSelectAll(myGroup.vehicleType);
                     if (toGroup.moveToPoint != null) {
-                      // scheduleMoveToPoint(myGroup, new Point2D(toGroup.getAveragePoint().getX() + toGroup.moveToPoint.getX(),
-                      //         toGroup.getAveragePoint().getY() + toGroup.moveToPoint.getY()));
+                        // scheduleMoveToPoint(myGroup, new Point2D(toGroup.getAveragePoint().getX() + toGroup.moveToPoint.getX(),
+                        //         toGroup.getAveragePoint().getY() + toGroup.moveToPoint.getY()));
 
                         scheduleMoveToPoint(myGroup, toGroup.moveToPoint);
                     } else {
