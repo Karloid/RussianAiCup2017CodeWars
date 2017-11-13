@@ -20,21 +20,25 @@ public final class Runner {
         hasArgs = args.length != 0;
         if (hasArgs) {
             try {
-                Thread.sleep(3000);
+                Thread.sleep(2000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            runProc("java", "-cp", "6.5.jar", "Runner");
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        } else {
-
         }
 
-        new Runner(new String[]{"127.0.0.1", hasArgs ? "31002" : "31001", "0000000000000000"}).run();
+        new Thread(() -> {
+            if (hasArgs) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                runProc("java", "-cp", "6.5.jar", "Runner");
+            }
+        }).start();
+        new Runner(new String[]{"127.0.0.1", hasArgs ? "31001" : "31002", "0000000000000000"}).run();
+
+
     }
 
     private Runner(String[] args) throws IOException {
