@@ -34,10 +34,11 @@ public class VehicleGroupInfo {
         return pointsInfo != null ? pointsInfo.averagePoint : null;
     }
 
-    public boolean isMovingToPoint() {
+    public boolean isMovingToPoint() {  //TODO calc distance
         return moveToPoint != null && (moveToPoint.getDistanceTo(getAveragePoint()) > 20
                 || pointsInfo.rect.getWidth() > 53
-                || pointsInfo.rect.getHeight() > 53) && myStrategy.um.getMinTimeWithoutUpdates(this) < 120; //TODO check size
+                || pointsInfo.rect.getHeight() > 53)
+                && myStrategy.um.getMinTimeWithoutUpdates(this) < 120; //TODO check size
     }
 
     public boolean itsTooBig() {

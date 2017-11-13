@@ -111,7 +111,7 @@ public class UnitManager {
     }
 
     public int getMinTimeWithoutUpdates(VehicleGroupInfo vehicleGroupInfo) {
-        return streamVehicles(vehicleGroupInfo.ownership, vehicleGroupInfo.vehicleType)
+        return vehicleGroupInfo.vehicles.stream()
                 .mapToInt(v -> mys.world.getTickIndex() - v.movedAt)
                 .min().orElse(0);
     }
