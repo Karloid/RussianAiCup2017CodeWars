@@ -15,6 +15,7 @@ public final class MyStrategy implements Strategy {
     public static final int PLAIN_SMOOTH = constantId++;
     public static final int SMOTHY_SMOOTH = constantId++;
 
+    public boolean logsEnabled;
     private Random random;
 
     private TerrainType[][] terrainTypeByCellXY;
@@ -572,7 +573,9 @@ public final class MyStrategy implements Strategy {
     }
 
     void log(String s) {
-        System.out.println(world.getTickIndex() + ": " + s);
+        if (logsEnabled) {
+            System.out.println(world.getTickIndex() + ": " + s);
+        }
     }
 
     private VehicleGroupInfo priorityFilter(List<VehicleGroupInfo> enemyGroups, List<VehicleType> targetType) {

@@ -1,18 +1,40 @@
-import model.*;
+import model.Game;
+import model.Move;
+import model.Player;
+import model.PlayerContext;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.Arrays;
 
 public final class Runner {
     private final RemoteProcessClient remoteProcessClient;
     private final String token;
+    private static boolean hasArgs;
 
     public static void main(String[] args) throws IOException {
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+
+
+        hasArgs = args.length != 0;
+        if (hasArgs) {
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            runProc("java", "-cp", "6.5.jar", "Runner");
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        } else {
+
         }
-        new Runner(args.length == 3 ? args : new String[] {"127.0.0.1", "31001", "0000000000000000"}).run();
+
+        new Runner(new String[]{"127.0.0.1", hasArgs ? "31002" : "31001", "0000000000000000"}).run();
     }
 
     private Runner(String[] args) throws IOException {
@@ -28,7 +50,9 @@ public final class Runner {
             remoteProcessClient.readTeamSizeMessage();
             Game game = remoteProcessClient.readGameContextMessage();
 
-            Strategy strategy = new MyStrategy();
+            MyStrategy strategy = new MyStrategy();
+
+            strategy.logsEnabled = hasArgs;
 
             PlayerContext playerContext;
 
@@ -47,4 +71,40 @@ public final class Runner {
             remoteProcessClient.close();
         }
     }
+
+    private static void runProc(String... runProc) {
+        new Thread(() -> {
+            try {
+                Process process = new ProcessBuilder(runProc).start();
+                System.out.println("started process: " + Arrays.toString(runProc));
+
+                InputStream inputStream = process.getInputStream();
+
+
+                readStream(process.getErrorStream(), runProc[0]);
+                readStream(inputStream, runProc[0]);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        }).start();
+
+    }
+
+    private static void readStream(InputStream inputStream, String s) throws IOException {
+        new Thread(() -> {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+            String line;
+            try {
+                while ((line = reader.readLine()) != null) {
+                    System.out.println(s + ": " + line);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }).start();
+
+    }
+
 }
