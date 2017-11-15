@@ -12,6 +12,8 @@ public final class MyStrategy implements Strategy {
     public static final int MIN_NUCLEAR_DMG = 500;
     private static int constantId;
 
+    private MyStrategyPainter painter = new EmptyPaintner();
+
     public static final int PLAIN_SMOOTH = constantId++;
     public static final int SMOTHY_SMOOTH = constantId++;
 
@@ -38,43 +40,52 @@ public final class MyStrategy implements Strategy {
     List<NuclearStrike> didNuclearStrikes = new ArrayList<>();
     private Player opponent;
 
+
     @Override
     public void move(Player me, World world, Game game, Move move) {
-        long start = System.currentTimeMillis();
-        initializeTick(me, world, game, move);
-        initializeStrategy(world, game);
+        try {
+            long start = System.currentTimeMillis();
+            initializeTick(me, world, game, move);
+            initializeStrategy(world, game);
+
+            painter.onStartTick();
 
 
-        doConstantPart();
-        //TODO do something with nuclear attacks
+            doConstantPart();
+            //TODO do something with nuclear attacks
 
-        if (me.getRemainingActionCooldownTicks() > 0) {
-            //nothing
-        } else if (executeDelayedMove()) {
-            delayedMovesSize();
-        } else {
-            oldMove();
+            if (me.getRemainingActionCooldownTicks() > 0) {
+                //nothing
+            } else if (executeDelayedMove()) {
+                delayedMovesSize();
+            } else {
+                oldMove();
 
-            executeDelayedMove();
-            delayedMovesSize();
-        }
+                executeDelayedMove();
+                delayedMovesSize();
+            }
 
-        if (move.getAction() != null && move.getAction() != ActionType.NONE) {
-            printCurrentAction();
-        }
+            if (move.getAction() != null && move.getAction() != ActionType.NONE) {
+                printCurrentAction();
+            }
 
 
-        long timeTaken = System.currentTimeMillis() - start;
-        elapsed += timeTaken;
-        if (timeTaken > 400) {
-            log("too much work " + timeTaken);
-        }
-        if (world.getTickIndex() == 19_999) {
-            log("time taken total: " + elapsed);
-        }
+            long timeTaken = System.currentTimeMillis() - start;
+            elapsed += timeTaken;
+            if (timeTaken > 400) {
+                log("too much work " + timeTaken);
+            }
+            if (world.getTickIndex() == 19_999) {
+                log("time taken total: " + elapsed);
+            }
 
-        if (world.getTickIndex() % 2000 == 0) {
-            printNuclearStats();
+            if (world.getTickIndex() % 2000 == 0) {
+                printNuclearStats();
+            }
+
+            painter.onEndTick();
+        } catch (Throwable e) {
+            e.printStackTrace(); // is bad
         }
     }
 
@@ -184,6 +195,8 @@ public final class MyStrategy implements Strategy {
 
             enemyGroups = getGroups(Ownership.ENEMY);
             myGroups = getGroups(Ownership.ALLY);
+
+            painter.onInitializeStrategy();
         }
     }
 
@@ -641,4 +654,12 @@ public final class MyStrategy implements Strategy {
     }
 
 
+    public void setPainter(MyStrategyPainter painter) {
+        this.painter = painter;
+        painter.setMYS(this);
+    }
+
+    public MyStrategyPainter getPainter() {
+        return painter;
+    }
 }

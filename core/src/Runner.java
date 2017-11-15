@@ -16,6 +16,7 @@ public final class Runner {
 
         hasArgs = args.length != 0;
         if (hasArgs) {
+            runProc(null, false, "./rewindviewer");
             try {
                 Thread.sleep(2000);
             } catch (InterruptedException e) {
@@ -30,7 +31,6 @@ public final class Runner {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                runProc(null, false, "./rewindviewer");
                 runProc(null, true, "java", "-cp", "6.5.jar", "Runner");
             }
         }).start();
@@ -55,6 +55,9 @@ public final class Runner {
             MyStrategy strategy = new MyStrategy();
 
             strategy.logsEnabled = hasArgs;
+            if (hasArgs) {
+                strategy.setPainter(new RewindClientWrapper());
+            }
 
             PlayerContext playerContext;
 
