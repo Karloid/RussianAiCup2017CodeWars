@@ -1,7 +1,9 @@
-import java.awt.Color;
+import java.awt.*;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Locale;
 
 
@@ -12,8 +14,10 @@ import java.util.Locale;
  */
 public class RewindClient {
 
+    private static String SUPER_STRING;;
     private final Socket socket;
     private final OutputStream outputStream;
+    private String msg = "";
 
     public enum Side {
         OUR(-1),
@@ -58,6 +62,17 @@ public class RewindClient {
      */
     void endFrame() {
         send("{\"type\":\"end\"}");
+        try {
+            msg = SUPER_STRING;
+            System.out.println(msg);
+            outputStream.write(msg.getBytes());
+            System.out.println("written");
+            outputStream.flush();
+            System.out.println("flush");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        msg = "";
     }
 
     void circle(double x, double y, double r, Color color, int layer) {
@@ -134,16 +149,18 @@ public class RewindClient {
 
     public RewindClient() {
         this("127.0.0.1", 9111);
+
+        try {
+            SUPER_STRING = new String(Files.readAllBytes(Paths.get("./rewindclienthang.txt")));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void send(String buf) {
-        try {
-            outputStream.write(buf.getBytes());
-            outputStream.flush();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        msg += "\n" + buf;
     }
+
 
     /**
      * Example of use
@@ -168,7 +185,7 @@ public class RewindClient {
 
         for (int i = 0; i < 2000; i++) {
             rc.message("Step " + i);
-            for (int j = 0; j < 100; j++) {
+            for (int j = 0; j < 1000; j++) {
                 Color rndColor = new Color((int) (255 * 255 * 255 * Math.random()));
 
 

@@ -31,8 +31,8 @@ public final class MyStrategy implements Strategy {
 
     private final Queue<Consumer<Move>> delayedMoves = new ArrayDeque<>();
     private Point2D centerPoint;
-    private List<VehicleGroupInfo> enemyGroups;
-    private List<VehicleGroupInfo> myGroups;
+    public List<VehicleGroupInfo> enemyGroups;
+    public List<VehicleGroupInfo> myGroups;
 
     UnitManager um = new UnitManager(this);
     private NuclearStrike scheduledStrike;
@@ -87,7 +87,7 @@ public final class MyStrategy implements Strategy {
         } catch (Throwable e) {
             e.printStackTrace(); // is bad
             if (logsEnabled) {
-                System.exit(-1);
+               throw new RuntimeException(e);
             }
         }
     }
