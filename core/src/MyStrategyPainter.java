@@ -6,4 +6,6 @@ public interface MyStrategyPainter {
     void onEndTick();
 
     void onInitializeStrategy();
+
+    void drawMove();
 }

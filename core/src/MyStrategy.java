@@ -26,7 +26,7 @@ public final class MyStrategy implements Strategy {
     Player me;
     World world;
     Game game;
-    private Move move;
+    public Move move;
 
 
     private final Queue<Consumer<Move>> delayedMoves = new ArrayDeque<>();
@@ -134,6 +134,8 @@ public final class MyStrategy implements Strategy {
                 str += "vehicle " + move.getVehicleId();
                 break;
         }
+
+        painter.drawMove();
 
         log(str);//TODO
     }

@@ -18,4 +18,9 @@ public class EmptyPaintner implements MyStrategyPainter {
     public void onInitializeStrategy() {
 
     }
+
+    @Override
+    public void drawMove() {
+
+    }
 }

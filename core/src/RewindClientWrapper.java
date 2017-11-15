@@ -1,7 +1,6 @@
-import model.TerrainType;
-import model.Vehicle;
-import model.WeatherType;
+import model.*;
 
+import java.awt.*;
 import java.util.Collection;
 
 public class RewindClientWrapper implements MyStrategyPainter {
@@ -20,6 +19,41 @@ public class RewindClientWrapper implements MyStrategyPainter {
             rc.livingUnit(v.getX(), v.getY(), v.getRadius(), v.getDurability(), v.getMaxDurability(), veh.isEnemy ? RewindClient.Side.ENEMY : RewindClient.Side.OUR
                     , 0, convertType(v), v.getRemainingAttackCooldownTicks(), v.getAttackCooldownTicks(), v.isSelected());
         }
+
+
+        //DRAW NUCLEAR
+        int tick = mys.world.getTickIndex();
+        Player[] players = mys.world.getPlayers();
+        for (int i = 0; i < players.length; i++) {
+            Player player = players[i];
+            int nextIndex = player.getNextNuclearStrikeTickIndex();
+            if (nextIndex < 0) {
+                continue;
+            }
+            int delta = tick - nextIndex;
+            if (delta > 40) {
+                continue;
+            } else {
+                double x = player.getNextNuclearStrikeX();
+                double y = player.getNextNuclearStrikeY();
+                Color color = getPlayerNuclearColor(player);
+
+                rc.circle(x, y, mys.game.getTacticalNuclearStrikeRadius(), color, 0);
+                rc.circle(x, y, 10, color, 0);
+
+                long vehicleId = player.getNextNuclearStrikeVehicleId();
+                VehicleWrapper veh = mys.um.get(vehicleId);
+                if (veh != null) {
+                    rc.line(x, y, veh.v.getX(), veh.v.getY(), color, 0);
+                    rc.circle(veh.v.getX(), veh.v.getY(), veh.v.getRadius() * 4, color, 0);
+                }
+            }
+
+        }
+    }
+
+    private Color getPlayerNuclearColor(Player player) {
+        return new Color(player.isMe() ? 0 : 255, 0, player.isMe() ? 255 : 0, 100);
     }
 
     private RewindClient.UnitType convertType(Vehicle v) {
@@ -62,6 +96,22 @@ public class RewindClientWrapper implements MyStrategyPainter {
                 if (weatherType != RewindClient.AreaType.UNKNOWN) {
                     rc.areaDescription(x, y, weatherType);
                 }
+            }
+        }
+
+
+    }
+
+    @Override
+    public void drawMove() {
+        Move move = mys.move;
+        if (move.getAction() == ActionType.TACTICAL_NUCLEAR_STRIKE) {
+            rc.circle(move.getX(), move.getY(), 4, Color.RED, 0);
+            VehicleWrapper veh = mys.um.get(move.getVehicleId());
+            if (veh != null) {
+                Color color = new Color(0, 255, 0, 100);
+                rc.circle(veh.getX(), veh.getY(), 4, color, 0);
+                rc.line(move.getX(), move.getY(), veh.getX(), veh.getY(), color, 0);
             }
         }
     }
