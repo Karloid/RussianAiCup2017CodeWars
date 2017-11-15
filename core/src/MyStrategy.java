@@ -20,8 +20,8 @@ public final class MyStrategy implements Strategy {
     public boolean logsEnabled;
     private Random random;
 
-    private TerrainType[][] terrainTypeByCellXY;
-    private WeatherType[][] weatherTypeByCellXY;
+    public TerrainType[][] terrainTypeByCellXY;
+    public WeatherType[][] weatherTypeByCellXY;
 
     Player me;
     World world;
@@ -86,6 +86,9 @@ public final class MyStrategy implements Strategy {
             painter.onEndTick();
         } catch (Throwable e) {
             e.printStackTrace(); // is bad
+            if (logsEnabled) {
+                System.exit(-1);
+            }
         }
     }
 
