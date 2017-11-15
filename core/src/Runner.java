@@ -3,10 +3,7 @@ import model.Move;
 import model.Player;
 import model.PlayerContext;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.Arrays;
 
 public final class Runner {
@@ -33,7 +30,8 @@ public final class Runner {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                runProc("java", "-cp", "6.5.jar", "Runner");
+                runProc(null, false, "./rewindviewer");
+                runProc(null, true, "java", "-cp", "6.5.jar", "Runner");
             }
         }).start();
         new Runner(new String[]{"127.0.0.1", hasArgs ? "31001" : "31002", "0000000000000000"}).run();
@@ -76,17 +74,25 @@ public final class Runner {
         }
     }
 
-    private static void runProc(String... runProc) {
+    @SuppressWarnings("SameParameterValue")
+    private static void runProc(File directory, boolean readInputStream, String... runProc) {
         new Thread(() -> {
             try {
-                Process process = new ProcessBuilder(runProc).start();
+                ProcessBuilder processBuilder = new ProcessBuilder(runProc);
+                if (directory != null) {
+                    processBuilder.directory(directory);
+                }
+
+                Process process = processBuilder.start();
                 System.out.println("started process: " + Arrays.toString(runProc));
 
-                InputStream inputStream = process.getInputStream();
+                if (readInputStream) {
+                    InputStream inputStream = process.getInputStream();
 
 
-                readStream(process.getErrorStream(), runProc[0]);
-                readStream(inputStream, runProc[0]);
+                    readStream(process.getErrorStream(), runProc[0]);
+                    readStream(inputStream, runProc[0]);
+                }
 
             } catch (Exception e) {
                 e.printStackTrace();

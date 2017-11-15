@@ -126,3 +126,6 @@ Thumbs.db
 /ios-moe/xcode/native/
 /lr/game.log
 /lr/result.txt
+/rewindviewer.ini
+/rewindviewer.log
+/rewindviewer-debug.log
