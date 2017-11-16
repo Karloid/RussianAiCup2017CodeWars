@@ -38,7 +38,8 @@ public final class MyStrategy implements Strategy {
     private NuclearStrike scheduledStrike;
     private long elapsed;
     List<NuclearStrike> didNuclearStrikes = new ArrayList<>();
-    private Player opponent;
+    Player opponent;
+    public int movesCount;
 
 
     @Override
@@ -66,6 +67,7 @@ public final class MyStrategy implements Strategy {
             }
 
             if (move.getAction() != null && move.getAction() != ActionType.NONE) {
+                movesCount++;
                 printCurrentAction();
             }
 

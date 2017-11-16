@@ -11,6 +11,9 @@ public class RewindClientWrapper implements MyStrategyPainter {
     public static final Color COLOR_MOVE = new Color(6, 100, 0, 128);
     public static final Color COLOR_MY_GROUP = new Color(3, 182, 0, 153);
     public static final Color COLOR_MOVE_POINT = new Color(211, 2, 23, 255);
+    public static final Color COLOR_NUCLEAR = new Color(0, 255, 0, 100);
+    private static final Color COLOR_NUCLEAR_VEH_VISION = new Color(180, 183, 76, 147);
+    public static final int LAYER_GENERIC = 3;
     private MyStrategy mys;
     private RewindClient rc;
 
@@ -44,14 +47,18 @@ public class RewindClientWrapper implements MyStrategyPainter {
                 double y = player.getNextNuclearStrikeY();
                 Color color = getPlayerNuclearColor(player);
 
-                rc.circle(x, y, mys.game.getTacticalNuclearStrikeRadius(), color, 1);
-                rc.circle(x, y, 10, color, 1);
+                rc.circle(x, y, mys.game.getTacticalNuclearStrikeRadius(), color, LAYER_GENERIC); // target
+                rc.circle(x, y, 10, color, LAYER_GENERIC);                                        //center of target
 
                 long vehicleId = player.getNextNuclearStrikeVehicleId();
                 VehicleWrapper veh = mys.um.get(vehicleId);
                 if (veh != null) {
                     rc.line(x, y, veh.v.getX(), veh.v.getY(), color, 1);
-                    rc.circle(veh.v.getX(), veh.v.getY(), veh.v.getRadius() * 4, color, 1);
+                    rc.circle(veh.v.getX(), veh.v.getY(), veh.v.getRadius() * 4, color, LAYER_GENERIC);
+                    rc.circle(veh.v.getX(), veh.v.getY(), veh.v.getVisionRange(), COLOR_NUCLEAR_VEH_VISION, LAYER_GENERIC);
+                    rc.message(String.format(Locale.US, "\\n NUCLEAR: %s distance %.2f vision range %.2f",
+                            player.isMe() ? "ME" : "ENEMY",
+                            Point2D.getDistance(x, y, veh.v.getX(), veh.v.getY()), veh.v.getVisionRange()));
                 }
             }
 
@@ -90,19 +97,70 @@ public class RewindClientWrapper implements MyStrategyPainter {
             for (int i = 0; i < myGroups.size(); i++) {
                 VehicleGroupInfo myGroup = myGroups.get(i);
                 Point2D ap = myGroup.getAveragePoint();
-                rc.circle(ap.getX(), ap.getY(), 4, COLOR_MY_GROUP, 0);
+                rc.circle(ap.getX(), ap.getY(), 4, COLOR_MY_GROUP, LAYER_GENERIC);
                 Rectangle2D rect = myGroup.pointsInfo.rect;
-                rc.rect(rect.getMinX(), rect.getMinY(), rect.getMaxX(), rect.getMaxY(), COLOR_MY_GROUP, 1);
+                rc.rect(rect.getMinX(), rect.getMinY(), rect.getMaxX(), rect.getMaxY(), COLOR_MY_GROUP, LAYER_GENERIC);
                 if (myGroup.moveToPoint != null) {
-                    rc.circle(myGroup.moveToPoint.getX(), myGroup.moveToPoint.getY(), 4, COLOR_MOVE_POINT, 1);
-                    rc.line(ap.getX(), ap.getY(), myGroup.moveToPoint.getX(), myGroup.moveToPoint.getX(), COLOR_MOVE_POINT, 1);
+                    rc.circle(myGroup.moveToPoint.getX(), myGroup.moveToPoint.getY(), 4, COLOR_MOVE_POINT, LAYER_GENERIC);
+                    rc.line(ap.getX(), ap.getY(), myGroup.moveToPoint.getX(), myGroup.moveToPoint.getY(), COLOR_MOVE_POINT, LAYER_GENERIC);
                 }
             }
         }
 
+        rc.message(String.format(Locale.US, "\\nMe: %s Opponent: %s\\nMy moves count: %s\\nActionCooldown: %s\\nNuclearCooldown: %s", mys.me.getScore(), mys.opponent.getScore(), mys.movesCount, mys.me.getRemainingActionCooldownTicks(), mys.me.getRemainingNuclearStrikeCooldownTicks()));
 
-        mys.log("painter: end tick");
+        drawMoveActual();
+
         rc.endFrame();
+    }
+
+    private void drawMoveActual() {
+        Move move = mys.move;
+
+        ActionType action = move.getAction();
+        if (action == null) {
+            return;
+        }
+
+        switch (action) {
+
+            case NONE:
+                break;
+            case CLEAR_AND_SELECT:
+                // rc.rect(move.getLeft(), move.getTop(), move.getRight(), move.getBottom(), COLOR_CLEAR_AND_SELECT, 0);
+                break;
+            case ADD_TO_SELECTION:
+                rc.rect(move.getLeft(), move.getTop(), move.getRight(), move.getBottom(), COLOR_ADD_TO_SELECT, LAYER_GENERIC);
+                break;
+            case DESELECT:
+                break;
+            case ASSIGN:
+                break;
+            case DISMISS:
+                break;
+            case DISBAND:
+                break;
+            case MOVE:
+                //TODO find center of selected group?
+                //  rc.circle(move.getX(), move.getY(), 20, COLOR_MOVE, 1);
+                rc.message(String.format("\\nmove %.2f %.2f", move.getX(), move.getY()));
+                break;
+            case ROTATE:
+                break;
+            case SCALE:
+                break;
+            case SETUP_VEHICLE_PRODUCTION:
+                break;
+            case TACTICAL_NUCLEAR_STRIKE:
+                rc.circle(move.getX(), move.getY(), 4, Color.RED, LAYER_GENERIC);
+                VehicleWrapper veh = mys.um.get(move.getVehicleId());
+                if (veh != null) {
+                    Color color = COLOR_NUCLEAR;
+                    rc.circle(veh.getX(), veh.getY(), 4, color, 1);
+                    rc.line(move.getX(), move.getY(), veh.getX(), veh.getY(), color, LAYER_GENERIC);
+                }
+                break;
+        }
     }
 
     @Override
@@ -127,45 +185,6 @@ public class RewindClientWrapper implements MyStrategyPainter {
 
     @Override
     public void drawMove() {
-        Move move = mys.move;
-        switch (move.getAction()) {
-
-            case NONE:
-                break;
-            case CLEAR_AND_SELECT:
-                // rc.rect(move.getLeft(), move.getTop(), move.getRight(), move.getBottom(), COLOR_CLEAR_AND_SELECT, 0);
-                break;
-            case ADD_TO_SELECTION:
-                rc.rect(move.getLeft(), move.getTop(), move.getRight(), move.getBottom(), COLOR_ADD_TO_SELECT, 1);
-                break;
-            case DESELECT:
-                break;
-            case ASSIGN:
-                break;
-            case DISMISS:
-                break;
-            case DISBAND:
-                break;
-            case MOVE:
-                //TODO find center of selected group?
-                rc.circle(move.getX(), move.getY(), 20, COLOR_MOVE, 1);
-                break;
-            case ROTATE:
-                break;
-            case SCALE:
-                break;
-            case SETUP_VEHICLE_PRODUCTION:
-                break;
-            case TACTICAL_NUCLEAR_STRIKE:
-                rc.circle(move.getX(), move.getY(), 4, Color.RED, 1);
-                VehicleWrapper veh = mys.um.get(move.getVehicleId());
-                if (veh != null) {
-                    Color color = new Color(0, 255, 0, 100);
-                    rc.circle(veh.getX(), veh.getY(), 4, color, 1);
-                    rc.line(move.getX(), move.getY(), veh.getX(), veh.getY(), color, 1);
-                }
-                break;
-        }
 
     }
 
