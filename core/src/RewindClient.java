@@ -67,14 +67,14 @@ public class RewindClient {
       //  msg = SUPER_STRING;
         //  System.out.println(msg);
         String msg1 = this.msg;
-        try {
+ /*       try {
             outputStream.write(msg1);
          //   System.out.println("written");
             outputStream.flush();
         //    System.out.println("flush");
         } catch (IOException e) {
             throw new RuntimeException(e);
-        }
+        }*/
 
   /*      executor.submit(() -> {
 
@@ -165,7 +165,15 @@ public class RewindClient {
     }
 
     private void send(String buf) {
-        msg += "\n" + buf;
+        //msg += "\n" + buf;
+        try {
+            outputStream.write(buf);
+            //   System.out.println("written");
+            outputStream.flush();
+            //    System.out.println("flush");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 

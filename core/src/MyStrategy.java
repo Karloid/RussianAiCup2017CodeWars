@@ -29,7 +29,7 @@ public final class MyStrategy implements Strategy {
     public Move move;
 
 
-    private final Queue<Consumer<Move>> delayedMoves = new ArrayDeque<>();
+    private final ArrayDeque<Consumer<Move>> delayedMoves = new ArrayDeque<>();
     private Point2D centerPoint;
     public List<VehicleGroupInfo> enemyGroups;
     public List<VehicleGroupInfo> myGroups;
@@ -40,6 +40,7 @@ public final class MyStrategy implements Strategy {
     List<NuclearStrike> didNuclearStrikes = new ArrayList<>();
     Player opponent;
     public int movesCount;
+    public Map<ActionType, Integer> movesStats = new HashMap<>();
 
 
     @Override
@@ -68,6 +69,7 @@ public final class MyStrategy implements Strategy {
 
             if (move.getAction() != null && move.getAction() != ActionType.NONE) {
                 movesCount++;
+                movesStats.put(move.getAction(), movesStats.getOrDefault(move.getAction(), 0) + 1);
                 printCurrentAction();
             }
 
@@ -89,7 +91,7 @@ public final class MyStrategy implements Strategy {
         } catch (Throwable e) {
             e.printStackTrace(); // is bad
             if (logsEnabled) {
-               throw new RuntimeException(e);
+                throw new RuntimeException(e);
             }
         }
     }
@@ -245,23 +247,22 @@ public final class MyStrategy implements Strategy {
             NuclearStrike max = NuclearStrike.getMaxDmg(this);
 
             if (max != null && max.predictedDmg > MIN_NUCLEAR_DMG) {
-                delayedMoves.clear();
                 scheduledStrike = max;
                 scheduledStrike.createdAt = world.getTickIndex();
 
-                delayedMoves.add(move1 -> {
+                delayedMoves.addFirst(move1 -> {
                     clearAndSelectOneUnit(max, move1, max.myVehicle);  //TODO select group
 
                     scheduledStrike.createdAt = world.getTickIndex();
                     log(Utils.LOG_NUCLEAR_STRIKE + " select unit " + max);
                 });
-                delayedMoves.add(move1 -> {
+                delayedMoves.addFirst(move1 -> {
                     move.setAction(ActionType.MOVE);
                     move.setX(0);
                     move.setY(0);
                     log(Utils.LOG_NUCLEAR_STRIKE + " stop unit " + max);
                 });
-                delayedMoves.add(move1 -> {
+                delayedMoves.addFirst(move1 -> {
                     max.actualTarget = max.target.getPos(game.getTacticalNuclearStrikeDelay());
                     double distance = max.actualTarget.getDistanceTo(max.myVehicle);
                     double maxDistance = max.myVehicle.v.getVisionRange() - 10;

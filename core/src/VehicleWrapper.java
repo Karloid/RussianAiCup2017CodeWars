@@ -6,7 +6,7 @@ public class VehicleWrapper {
     private Point2D moveVector;
     public Vehicle v;
     private final MyStrategy mys;
-    public int updatedAt;
+    public int hpChangedAt;
     public int movedAt;
     int hpDelta;
 
@@ -19,16 +19,21 @@ public class VehicleWrapper {
     }
 
     public void setUpdatedAt(int tickIndex) {
-        updatedAt = tickIndex;
+        hpChangedAt = tickIndex;
         movedAt = tickIndex;
     }
 
     public void update(Vehicle newVehicle) {
+        int currentTick = mys.world.getTickIndex();
         if (v.getX() != newVehicle.getX() || v.getY() != newVehicle.getY()) {
             moveVector = Point2D.vector(v.getX(), v.getY(), newVehicle.getX(), newVehicle.getY());
+            movedAt = currentTick;
         }
 
         hpDelta = newVehicle.getDurability() - v.getDurability();
+        if (hpDelta != 0) {
+            hpChangedAt = currentTick;
+        }
 
         v = newVehicle;
     }
@@ -44,7 +49,7 @@ public class VehicleWrapper {
         sb.append(", hp=").append(v.getDurability());
         sb.append(", XY=").append((int) v.getX()).append(" - ").append((int) v.getY());
         sb.append(", moveVector=").append(moveVector);
-        sb.append(", updatedAt=").append(updatedAt);
+        sb.append(", hpChangedAt=").append(hpChangedAt);
         sb.append(", movedAt=").append(movedAt);
         sb.append('}');
         return sb.toString();

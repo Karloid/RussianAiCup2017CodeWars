@@ -107,7 +107,16 @@ public class RewindClientWrapper implements MyStrategyPainter {
             }
         }
 
-        rc.message(String.format(Locale.US, "\\nMe: %s Opponent: %s\\nMy moves count: %s\\nActionCooldown: %s\\nNuclearCooldown: %s", mys.me.getScore(), mys.opponent.getScore(), mys.movesCount, mys.me.getRemainingActionCooldownTicks(), mys.me.getRemainingNuclearStrikeCooldownTicks()));
+        rc.message(String.format(Locale.US, "\\nMe: %s Opponent: %s\\nActionCooldown: %s\\nNuclearCooldown: %s", mys.me.getScore(), mys.opponent.getScore(), mys.me.getRemainingActionCooldownTicks(), mys.me.getRemainingNuclearStrikeCooldownTicks()));
+
+        ArrayList<Map.Entry<ActionType, Integer>> entries = new ArrayList<>(mys.movesStats.entrySet());
+        String msg = "\\nMy moves count: " + mys.movesCount +"\\n";
+        entries.sort(Comparator.comparingInt(Map.Entry::getValue));
+        for (int i = entries.size() - 1; i >= 0; i--) {
+            Map.Entry<ActionType, Integer> e = entries.get(i);
+            msg += e.getKey() + " " + e.getValue() + "\\n";
+        }
+        rc.message(msg);
 
         drawMoveActual();
 
