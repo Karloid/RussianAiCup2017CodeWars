@@ -41,6 +41,9 @@ public final class MyStrategy implements Strategy {
     Player opponent;
     public int movesCount;
     public Map<ActionType, Integer> movesStats = new HashMap<>();
+    private int handledOpponentNuclear = -1;
+    private double enemyNextNuclearStrikeX;
+    private double enemyNextNuclearStrikeY;
 
 
     @Override
@@ -250,18 +253,7 @@ public final class MyStrategy implements Strategy {
                 scheduledStrike = max;
                 scheduledStrike.createdAt = world.getTickIndex();
 
-                delayedMoves.addFirst(move1 -> {
-                    clearAndSelectOneUnit(max, move1, max.myVehicle);  //TODO select group
 
-                    scheduledStrike.createdAt = world.getTickIndex();
-                    log(Utils.LOG_NUCLEAR_STRIKE + " select unit " + max);
-                });
-                delayedMoves.addFirst(move1 -> {
-                    move.setAction(ActionType.MOVE);
-                    move.setX(0);
-                    move.setY(0);
-                    log(Utils.LOG_NUCLEAR_STRIKE + " stop unit " + max);
-                });
                 delayedMoves.addFirst(move1 -> {
                     max.actualTarget = max.target.getPos(game.getTacticalNuclearStrikeDelay());
                     double distance = max.actualTarget.getDistanceTo(max.myVehicle);
@@ -293,9 +285,58 @@ public final class MyStrategy implements Strategy {
                     max.startedAt = world.getTickIndex();
                     log(Utils.LOG_NUCLEAR_STRIKE + " start " + max);
                 });
+
+                delayedMoves.addFirst(move1 -> {
+                    move.setAction(ActionType.MOVE);
+                    move.setX(0);
+                    move.setY(0);
+                    log(Utils.LOG_NUCLEAR_STRIKE + " stop unit " + max);
+                });
+
+                delayedMoves.addFirst(move1 -> {
+                    clearAndSelectOneUnit(max, move1, max.myVehicle);  //TODO select group
+
+                    scheduledStrike.createdAt = world.getTickIndex();
+                    log(Utils.LOG_NUCLEAR_STRIKE + " select unit " + max);
+                });
                 return;
             }
 
+        }
+
+        if (opponent.getNextNuclearStrikeTickIndex() != -1 && handledOpponentNuclear != opponent.getNextNuclearStrikeTickIndex()) {
+            handledOpponentNuclear = opponent.getNextNuclearStrikeTickIndex();
+
+            enemyNextNuclearStrikeX = opponent.getNextNuclearStrikeX();
+            enemyNextNuclearStrikeY = opponent.getNextNuclearStrikeY();
+            delayedMoves.addFirst(move1 -> {
+                move1.setAction(ActionType.SCALE);
+                move1.setX(enemyNextNuclearStrikeX);
+                move1.setY(enemyNextNuclearStrikeY);
+                move1.setFactor(10);
+            });
+            delayedMoves.addFirst(move -> {
+                move.setAction(ActionType.CLEAR_AND_SELECT);
+
+                move.setRight(enemyNextNuclearStrikeX + game.getTacticalNuclearStrikeRadius());
+                move.setLeft(enemyNextNuclearStrikeX - game.getTacticalNuclearStrikeRadius());
+                move.setBottom(enemyNextNuclearStrikeY + game.getTacticalNuclearStrikeRadius());
+                move.setTop(enemyNextNuclearStrikeY - game.getTacticalNuclearStrikeRadius());
+                move.setVehicleType(null);
+            });
+
+        }
+
+        if (handledOpponentNuclear >= world.getTickIndex()) {
+            return;
+        } else if (handledOpponentNuclear + 1 == world.getTickIndex()) {
+            delayedMoves.addFirst(move1 -> {
+                move1.setAction(ActionType.SCALE);
+                move1.setX(enemyNextNuclearStrikeX);
+                move1.setY(enemyNextNuclearStrikeY);
+                move1.setFactor(0.1);
+            });
+            return;
         }
 
 
@@ -545,10 +586,10 @@ public final class MyStrategy implements Strategy {
     private void scheduleMoveToPoint(VehicleGroupInfo myGroup, VehicleGroupInfo toGroup) {
         delayedMoves.add(move -> {
             Point2D goToPoint = toGroup.getAveragePoint();
-         /*   if (!toGroup.vehicles.isEmpty()) {
+            if (!toGroup.vehicles.isEmpty() && toGroup.vehicles.get(0).isEnemy) {
                 toGroup.vehicles.sort(Comparator.comparingDouble(o -> myGroup.getAveragePoint().getDistanceTo(o)));
                 goToPoint = toGroup.vehicles.get(0).getPos(0);
-            }*/
+            }
 
             actualMoveToPoint(myGroup, goToPoint, move);
         });
