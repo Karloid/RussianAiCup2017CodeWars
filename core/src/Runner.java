@@ -46,13 +46,14 @@ public final class Runner {
 
     @SuppressWarnings("WeakerAccess")
     public void run() throws IOException {
+        MyStrategy strategy = new MyStrategy();
         try {
             remoteProcessClient.writeTokenMessage(token);
             remoteProcessClient.writeProtocolVersionMessage();
             remoteProcessClient.readTeamSizeMessage();
             Game game = remoteProcessClient.readGameContextMessage();
 
-            MyStrategy strategy = new MyStrategy();
+
 
             strategy.logsEnabled = hasArgs;
             if (hasArgs) {
@@ -75,6 +76,7 @@ public final class Runner {
         } finally {
             remoteProcessClient.close();
         }
+        System.out.println("total time elapsed: "+ strategy.elapsed);
     }
 
     @SuppressWarnings("SameParameterValue")

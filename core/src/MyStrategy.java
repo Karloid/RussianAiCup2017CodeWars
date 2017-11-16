@@ -36,7 +36,7 @@ public final class MyStrategy implements Strategy {
 
     UnitManager um = new UnitManager(this);
     private NuclearStrike scheduledStrike;
-    private long elapsed;
+    public long elapsed;
     List<NuclearStrike> didNuclearStrikes = new ArrayList<>();
     Player opponent;
     public int movesCount;
