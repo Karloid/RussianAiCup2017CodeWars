@@ -16,7 +16,7 @@ public final class Runner {
 
         hasArgs = args.length != 0;
         if (hasArgs) {
-            runProc(null, false, "./rewindviewer");
+           // runProc(null, false, "./rewindviewer");
             try {
                 Thread.sleep(2000);
             } catch (InterruptedException e) {

@@ -1,10 +1,9 @@
 import java.awt.*;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.net.Socket;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
 
 
 /**
@@ -14,10 +13,12 @@ import java.util.Locale;
  */
 public class RewindClient {
 
-    private static String SUPER_STRING;;
+    private static String SUPER_STRING;
+    ;
     private final Socket socket;
-    private final OutputStream outputStream;
+    private final OutputStreamWriter outputStream;
     private String msg = "";
+    private ExecutorService executor;
 
     public enum Side {
         OUR(-1),
@@ -62,16 +63,22 @@ public class RewindClient {
      */
     void endFrame() {
         send("{\"type\":\"end\"}");
+
+      //  msg = SUPER_STRING;
+        //  System.out.println(msg);
+        String msg1 = this.msg;
         try {
-            msg = SUPER_STRING;
-            System.out.println(msg);
-            outputStream.write(msg.getBytes());
-            System.out.println("written");
+            outputStream.write(msg1);
+         //   System.out.println("written");
             outputStream.flush();
-            System.out.println("flush");
+        //    System.out.println("flush");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
+  /*      executor.submit(() -> {
+
+        });*/
         msg = "";
     }
 
@@ -141,7 +148,7 @@ public class RewindClient {
         try {
             socket = new Socket(host, port);
             socket.setTcpNoDelay(true);
-            outputStream = socket.getOutputStream();
+            outputStream = new OutputStreamWriter(socket.getOutputStream(), "UTF-8");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -150,11 +157,11 @@ public class RewindClient {
     public RewindClient() {
         this("127.0.0.1", 9111);
 
-        try {
-            SUPER_STRING = new String(Files.readAllBytes(Paths.get("./rewindclienthang.txt")));
+  /*      try {
+//            SUPER_STRING = new String(Files.readAllBytes(Paths.get("./rewindclienthang.txt")));
         } catch (IOException e) {
             e.printStackTrace();
-        }
+        }*/
     }
 
     private void send(String buf) {
@@ -185,7 +192,7 @@ public class RewindClient {
 
         for (int i = 0; i < 2000; i++) {
             rc.message("Step " + i);
-            for (int j = 0; j < 1000; j++) {
+        /*    for (int j = 0; j < 1000; j++) {
                 Color rndColor = new Color((int) (255 * 255 * 255 * Math.random()));
 
 
@@ -215,7 +222,7 @@ public class RewindClient {
                 double rectX1 = circleX + Math.random() * 100;
                 double rectY1 = circleY + Math.random() * 100;
                 rc.rect(rectX1, rectY1, rectX1 + Math.random() * 40, rectY1 + Math.random() * 40, rndColor, 1);
-            }
+            }*/
             rc.endFrame();
         }
 

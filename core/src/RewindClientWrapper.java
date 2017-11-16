@@ -101,6 +101,7 @@ public class RewindClientWrapper implements MyStrategyPainter {
         }
 
 
+        mys.log("painter: end tick");
         rc.endFrame();
     }
 
