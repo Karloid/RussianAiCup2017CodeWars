@@ -314,6 +314,18 @@ public final class MyStrategy implements Strategy {
                 continue;
             }
 
+            if (!myGroup.isScaled) {
+                myGroup.isScaled = true;
+                scheduleSelectAll(myGroup.vehicleType);
+                delayedMoves.add(move1 -> {
+                    move1.setAction(ActionType.SCALE);
+                    move1.setX(myGroup.getAveragePoint().getX());
+                    move1.setY(myGroup.getAveragePoint().getY());
+                    move1.setFactor(0.3);
+                });
+                continue;
+            }
+
           /*  if (myGroup.itsTooBig() && world.getTickIndex() - myGroup.lastShrinkI > 400) {
                 scheduleShrink(myGroup);
                 continue;
@@ -533,10 +545,10 @@ public final class MyStrategy implements Strategy {
     private void scheduleMoveToPoint(VehicleGroupInfo myGroup, VehicleGroupInfo toGroup) {
         delayedMoves.add(move -> {
             Point2D goToPoint = toGroup.getAveragePoint();
-            if (!toGroup.vehicles.isEmpty()) {
+         /*   if (!toGroup.vehicles.isEmpty()) {
                 toGroup.vehicles.sort(Comparator.comparingDouble(o -> myGroup.getAveragePoint().getDistanceTo(o)));
                 goToPoint = toGroup.vehicles.get(0).getPos(0);
-            }
+            }*/
 
             actualMoveToPoint(myGroup, goToPoint, move);
         });
@@ -550,17 +562,18 @@ public final class MyStrategy implements Strategy {
 
     private void actualMoveToPoint(VehicleGroupInfo myGroup, Point2D point, Move move) {
         Point2D p = point;
-        double distanceTo = myGroup.getAveragePoint().getDistanceTo(p);
+        Point2D myAverage = myGroup.getAveragePoint();
+        double distanceTo = myAverage.getDistanceTo(p);
         double maxDistance = 250;
         if (distanceTo > maxDistance) {
             double koeff = maxDistance / distanceTo;
-            p = new Point2D((p.getX() - myGroup.getAveragePoint().getX()) * koeff + myGroup.getAveragePoint().getX(),
-                    (p.getY() - myGroup.getAveragePoint().getY()) * koeff + myGroup.getAveragePoint().getY());
+            p = new Point2D((p.getX() - myAverage.getX()) * koeff + myAverage.getX(),
+                    (p.getY() - myAverage.getY()) * koeff + myAverage.getY());
         }
 
 
-        double dx = p.getX() - myGroup.getAveragePoint().getX();
-        double dy = p.getY() - myGroup.getAveragePoint().getY();
+        double dx = p.getX() - myAverage.getX();
+        double dy = p.getY() - myAverage.getY();
 
         List<VehicleWrapper> separatedVehicles = myGroup.countWillBeFurtherThenBefore(new Point2D(dx, dy), p);
         if (separatedVehicles.size() > 0) {
@@ -577,7 +590,7 @@ public final class MyStrategy implements Strategy {
         }
         //TODO look at tanks group
         if (myGroup.vehicleType == IFV) {
-            move.setMaxSpeed(game.getTankSpeed() * 0.6);
+          //  move.setMaxSpeed(game.getTankSpeed() * 0.6);
         }
         log("oldMove to point " + p + " group " + myGroup);
         myGroup.moveToPoint = p;

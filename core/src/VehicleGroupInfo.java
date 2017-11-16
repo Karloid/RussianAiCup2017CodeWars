@@ -13,6 +13,7 @@ public class VehicleGroupInfo {
     public PointsInfo pointsInfo;
     public List<VehicleWrapper> vehicles = new ArrayList<>();
     public int lastShrinkI;
+    public boolean isScaled;
 
     public VehicleGroupInfo(Ownership ownership, VehicleType vehicleType, MyStrategy myStrategy) {
         this.ownership = ownership;
