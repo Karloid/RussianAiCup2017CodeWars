@@ -4,6 +4,7 @@ import java.util.Comparator;
 
 public class NuclearStrike {
     public static final int PREDICTION_TICK = 33;
+    public static final int KILL_BONUS = 45;
     public final VehicleWrapper myVehicle;
     public final VehicleWrapper target;
     public final MyStrategy myStrategy;
@@ -57,7 +58,7 @@ public class NuclearStrike {
 
                     double dmg = (1 - distanceTo / maxRadius) * maxDmg;
                     if (dmg > veh.v.getDurability()) {
-                        dmg = dmg + 20;
+                        dmg = dmg + KILL_BONUS;
                     }
 
                     if (veh.v.getType() == VehicleType.ARRV) {
