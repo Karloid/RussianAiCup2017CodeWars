@@ -82,7 +82,7 @@ public final class MyStrategy implements Strategy {
             if (timeTaken > 400) {
                 log("too much work " + timeTaken);
             }
-            if (world.getTickIndex() == 19_999) {
+            if (world.getTickIndex() % 1000 == 0) {
                 log("time taken total: " + elapsed);
             }
 
@@ -241,8 +241,6 @@ public final class MyStrategy implements Strategy {
      * Основная логика нашей стратегии.
      */
     private void oldMove() {
-        //TODO fix bug: a lot of nuclear strikes not fire
-
         enemyGroups = getGroups(Ownership.ENEMY);
         refreshGroups(myGroups);
 
@@ -257,7 +255,7 @@ public final class MyStrategy implements Strategy {
                 delayedMoves.addFirst(move1 -> {
                     max.actualTarget = max.target.getPos(game.getTacticalNuclearStrikeDelay());
                     double distance = max.actualTarget.getDistanceTo(max.myVehicle);
-                    double maxDistance = max.myVehicle.v.getVisionRange() - 10;
+                    double maxDistance = max.myVehicle.getActualVisionRange(); //TODO calc real vision range
                     if (distance > maxDistance) {
                         log(Utils.LOG_NUCLEAR_STRIKE + " correct point from " + max.actualTarget + " distance is " + max.actualTarget.getDistanceTo(max.myVehicle) + " maxDistance: " + maxDistance);
                         Point2D vector = Point2D.vector(max.myVehicle.getX(), max.myVehicle.getY(), max.actualTarget.getX(), max.actualTarget.getY());
@@ -631,7 +629,7 @@ public final class MyStrategy implements Strategy {
         }
         //TODO look at tanks group
         if (myGroup.vehicleType == IFV) {
-          //  move.setMaxSpeed(game.getTankSpeed() * 0.6);
+            //  move.setMaxSpeed(game.getTankSpeed() * 0.6);
         }
         log("oldMove to point " + p + " group " + myGroup);
         myGroup.moveToPoint = p;

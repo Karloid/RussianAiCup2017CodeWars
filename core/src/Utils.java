@@ -12,6 +12,7 @@ public class Utils {
                         return v;
                     },               // combiner
                     summary -> new PointsInfo(summary));
+    
     public static final String LOG_NUCLEAR_STRIKE = "NUCLEAR_STRIKE";
     static final String LOG_MOVING = "MOVING";
 

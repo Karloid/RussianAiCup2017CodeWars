@@ -97,7 +97,7 @@ public class NuclearStrike {
                 .flatMap((VehicleWrapper v) ->
                         mys.um.streamVehicles(Ownership.ALLY)
                                 .filter(myVehicle ->
-                                        myVehicle.getDistanceToPredictTarget(v, PREDICTION_TICK) < myVehicle.v.getVisionRange())
+                                        myVehicle.getDistanceToPredictTarget(v, PREDICTION_TICK) < myVehicle.getActualVisionRange())
                                 .map(myVehicle -> new NuclearStrike(myVehicle, v, mys)))
                 .filter(nuclearStrike -> nuclearStrike.predictedDmg > MyStrategy.MIN_NUCLEAR_DMG)
                 .max(Comparator.comparingDouble(o -> o.predictedDmg))

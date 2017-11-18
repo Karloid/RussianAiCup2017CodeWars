@@ -1,4 +1,7 @@
+import model.TerrainType;
 import model.Vehicle;
+import model.VehicleType;
+import model.WeatherType;
 
 public class VehicleWrapper {
     public static final Point2D NOT_MOVING = new Point2D(0, 0);
@@ -36,6 +39,10 @@ public class VehicleWrapper {
         }
 
         v = newVehicle;
+
+     /*   if (v.getId() == 10) {
+            mys.log("DEBUG my terrain " + getCurrentPlace() + " my type " + v.getType() + " x y " + (int) (getX() / 32) + " " + (int) (getY() / 32) );
+        }*/
     }
 
     public double getDistanceTo(VehicleWrapper sec) {
@@ -61,7 +68,7 @@ public class VehicleWrapper {
 
     public double getY(int ticks) {
         Point2D mv = getMoveVector();
-            return v.getY() + mv.getY() * ticks;
+        return v.getY() + mv.getY() * ticks;
     }
 
     public double getX(int ticks) {
@@ -87,5 +94,61 @@ public class VehicleWrapper {
 
     public Point2D getMoveVector() {
         return movedAt == mys.world.getTickIndex() ? moveVector : NOT_MOVING;
+    }
+
+    public double getActualVisionRange() {
+        double d = v.getVisionRange();
+
+        double k = getVisibleKoeff();
+
+        d *= k;
+
+        return d - .5;
+    }
+
+    public String getCurrentPlace() {
+        int x = (int) (getX() / 32);
+        int y = (int) (getY() / 32);
+
+        if (v.getType() == VehicleType.TANK || v.getType() == VehicleType.IFV || v.getType() == VehicleType.ARRV) {
+            TerrainType terrainType = mys.terrainTypeByCellXY[x][y];
+            return terrainType.toString();
+        } else {
+            WeatherType weatherType = mys.weatherTypeByCellXY[x][y];
+            return weatherType.toString();
+        }
+    }
+
+    private double getVisibleKoeff() {
+        int x = (int) (getX() / 32);
+        int y = (int) (getY() / 32);
+
+        double k = 1;
+        if (v.getType() == VehicleType.TANK || v.getType() == VehicleType.IFV || v.getType() == VehicleType.ARRV) {
+            TerrainType terrainType = mys.terrainTypeByCellXY[x][y];
+            switch (terrainType) {
+                case PLAIN:
+                    break;
+                case SWAMP:
+                    k = mys.game.getSwampTerrainVisionFactor();
+                    break;
+                case FOREST:
+                    k = mys.game.getForestTerrainSpeedFactor();
+                    break;
+            }
+        } else {
+            WeatherType weatherType = mys.weatherTypeByCellXY[x][y];
+            switch (weatherType) {
+                case CLEAR:
+                    break;
+                case CLOUD:
+                    k = mys.game.getCloudWeatherVisionFactor();
+                    break;
+                case RAIN:
+                    k = mys.game.getRainWeatherVisionFactor();
+                    break;
+            }
+        }
+        return k;
     }
 }
