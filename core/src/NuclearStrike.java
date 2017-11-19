@@ -94,13 +94,17 @@ public class NuclearStrike {
     }
 
     public static NuclearStrike getMaxDmg(MyStrategy mys) {
+        int remainingHp = mys.um.enemyStats.remainingHp;
+        int minNuclearDmg = (int) Math.min(MyStrategy.MIN_NUCLEAR_DMG, remainingHp * 0.7);
         return mys.um.streamVehicles(Ownership.ENEMY)
                 .flatMap((VehicleWrapper v) ->
                         mys.um.streamVehicles(Ownership.ALLY)
                                 .filter(myVehicle ->
                                         myVehicle.getDistanceToPredictTarget(v, PREDICTION_TICK) < myVehicle.getActualVisionRange())
                                 .map(myVehicle -> new NuclearStrike(myVehicle, v, mys)))
-                .filter(nuclearStrike -> nuclearStrike.predictedDmg > MyStrategy.MIN_NUCLEAR_DMG)
+                .filter(nuclearStrike -> {
+                    return nuclearStrike.predictedDmg > minNuclearDmg;
+                })
                 .max(Comparator.comparingDouble(o -> o.predictedDmg))
                 .orElse(null);
     }

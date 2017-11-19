@@ -2,10 +2,7 @@ import model.Vehicle;
 import model.VehicleType;
 import model.VehicleUpdate;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -64,11 +61,20 @@ public class UnitManager {
         }
 
 
+        Collection<VehicleWrapper> allUnits = vehicleById.values();
+
+        for (Iterator<VehicleWrapper> iterator = allUnits.iterator(); iterator.hasNext(); ) {
+            VehicleWrapper u = iterator.next();
+            TickStats stats = u.isEnemy ? enemyStats : myStats;
+
+            stats.remainingUnits++;
+            stats.remainingHp += u.v.getDurability();
+        }
         if (myStats.isNonEmpty()) {
             mys.log("My stats: " + myStats);
         }
         if (enemyStats.isNonEmpty()) {
-             mys.log("Enemy stats: " + enemyStats);
+            mys.log("Enemy stats: " + enemyStats);
         }
     }
 

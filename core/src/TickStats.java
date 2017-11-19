@@ -3,6 +3,8 @@ public class TickStats {
     public int damagedPoints;
     public int damagedUnits;
     public int destroyedUnits;
+    public int remainingUnits;
+    public int remainingHp;
 
     @Override
     public String toString() {
