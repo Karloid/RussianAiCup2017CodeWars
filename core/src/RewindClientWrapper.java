@@ -13,7 +13,7 @@ public class RewindClientWrapper implements MyStrategyPainter {
     public static final Color COLOR_MOVE_POINT = new Color(211, 2, 23, 255);
     public static final Color COLOR_NUCLEAR = new Color(0, 255, 0, 100);
     private static final Color COLOR_NUCLEAR_VEH_VISION = new Color(180, 183, 76, 147);
-    public static final int LAYER_GENERIC = 3;
+    public static final int LAYER_GENERIC = 4;
     private MyStrategy mys;
     private RewindClient rc;
 

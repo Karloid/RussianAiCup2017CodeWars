@@ -44,6 +44,7 @@ public final class MyStrategy implements Strategy {
     private int handledOpponentNuclear = -1;
     private double enemyNextNuclearStrikeX;
     private double enemyNextNuclearStrikeY;
+    public List<VehicleGroupInfo> koverGroups = new ArrayList<>();
 
 
     @Override
@@ -441,7 +442,8 @@ public final class MyStrategy implements Strategy {
                     groups.removeIf(vehicleGroupInfo -> vehicleGroupInfo == myGroup);
 
                     if (groups.isEmpty()) {
-                        scheduleMoveToPoint(myGroup, new Point2D(0, 0));
+                        scaleToKover(myGroup);
+                        return;
                     }
                     VehicleGroupInfo toGroup = null;
                     for (VehicleGroupInfo group : groups) {
@@ -470,14 +472,15 @@ public final class MyStrategy implements Strategy {
             List<VehicleType> targetType = getPreferredTargetType(myGroup.vehicleType);
             VehicleGroupInfo enemyGroup = priorityFilter(enemyGroups, targetType);
             if (enemyGroup == null) {
-                scheduleSelectAll(myGroup.vehicleType);
+              /*  scheduleSelectAll(myGroup.vehicleType);
 
                 Point2D point = this.centerPoint;
                 if (myGroup.vehicleType == FIGHTER) {
                     point = new Point2D(world.getWidth(), 0);
                 }
 
-                scheduleMoveToPoint(myGroup, point);
+                scheduleMoveToPoint(myGroup, point);*/
+                scaleToKover(myGroup);
             } else {
                 scheduleSelectAll(myGroup.vehicleType);
 
@@ -504,6 +507,21 @@ public final class MyStrategy implements Strategy {
             }
         }
 */
+    }
+
+    private void scaleToKover(VehicleGroupInfo myGroup) {
+        if (!koverGroups.contains(myGroup)) {
+            scheduleSelectAll(myGroup.vehicleType);
+            delayedMoves.add(move1 -> {
+                if (koverGroups.contains(myGroup)) {
+                    return;
+                }
+                koverGroups.add(myGroup);
+                move1.setFactor(10);
+                move1.setX(myGroup.getAveragePoint().getX());
+                move1.setY(myGroup.getAveragePoint().getY());
+            });
+        }
     }
 
     private void scheduleShrink(VehicleGroupInfo myGroup) {
