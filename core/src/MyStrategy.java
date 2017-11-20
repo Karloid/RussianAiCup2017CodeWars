@@ -1,5 +1,6 @@
 import model.*;
 
+import java.awt.geom.Rectangle2D;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -45,6 +46,7 @@ public final class MyStrategy implements Strategy {
     private double enemyNextNuclearStrikeX;
     private double enemyNextNuclearStrikeY;
     public List<VehicleGroupInfo> koverGroups = new ArrayList<>();
+    private boolean handledOpponentNuclearShouldScaleDown;
 
 
     @Override
@@ -60,7 +62,9 @@ public final class MyStrategy implements Strategy {
             doConstantPart();
             //TODO do something with nuclear attacks
 
-            if (me.getRemainingActionCooldownTicks() > 0) {
+            if (handledOpponentNuclearShouldScaleDown && handledOpponentNuclear >= world.getTickIndex()) {
+                //wait for strike
+            } else if (me.getRemainingActionCooldownTicks() > 0) {
                 //nothing
             } else if (executeDelayedMove()) {
                 delayedMovesSize();
@@ -246,9 +250,13 @@ public final class MyStrategy implements Strategy {
         refreshGroups(myGroups);
 
         if (me.getRemainingNuclearStrikeCooldownTicks() == 0 && scheduledStrike == null) {
+            int remainingHp = um.enemyStats.remainingHp;
+            int minNuclearDmg = (int) Math.min(MyStrategy.MIN_NUCLEAR_DMG, remainingHp * 0.7);
+
+
             NuclearStrike max = NuclearStrike.getMaxDmg(this);
 
-            if (max != null && max.predictedDmg > MIN_NUCLEAR_DMG) {
+            if (max != null && max.predictedDmg > minNuclearDmg) {
                 scheduledStrike = max;
                 scheduledStrike.createdAt = world.getTickIndex();
 
@@ -266,7 +274,7 @@ public final class MyStrategy implements Strategy {
                         log(Utils.LOG_NUCLEAR_STRIKE + " correct point to " + max.actualTarget + " distance is " + max.actualTarget.getDistanceTo(max.myVehicle) + " maxDistance: " + maxDistance);
                     }
                     max.recalcPredicted();
-                    if (max.predictedDmg < MIN_NUCLEAR_DMG) {
+                    if (max.predictedDmg < remainingHp) {
                         log(Utils.LOG_NUCLEAR_STRIKE + " find new target or cancel");
                         scheduledStrike.finish();
                         scheduledStrike.canceled = true;
@@ -305,14 +313,24 @@ public final class MyStrategy implements Strategy {
 
         if (opponent.getNextNuclearStrikeTickIndex() != -1 && handledOpponentNuclear != opponent.getNextNuclearStrikeTickIndex()) {
             handledOpponentNuclear = opponent.getNextNuclearStrikeTickIndex();
-
             enemyNextNuclearStrikeX = opponent.getNextNuclearStrikeX();
             enemyNextNuclearStrikeY = opponent.getNextNuclearStrikeY();
+
+            delayedMoves.addFirst(move1 -> {
+                move1.setAction(ActionType.SCALE);
+                move1.setX(enemyNextNuclearStrikeX);
+                move1.setY(enemyNextNuclearStrikeY);
+                move1.setFactor(0.1);
+
+                handledOpponentNuclearShouldScaleDown = false;
+            });
+
             delayedMoves.addFirst(move1 -> {
                 move1.setAction(ActionType.SCALE);
                 move1.setX(enemyNextNuclearStrikeX);
                 move1.setY(enemyNextNuclearStrikeY);
                 move1.setFactor(10);
+                handledOpponentNuclearShouldScaleDown = true;
             });
             delayedMoves.addFirst(move -> {
                 move.setAction(ActionType.CLEAR_AND_SELECT);
@@ -326,23 +344,11 @@ public final class MyStrategy implements Strategy {
 
         }
 
-        if (handledOpponentNuclear >= world.getTickIndex()) {
-            return;
-        } else if (handledOpponentNuclear + 1 == world.getTickIndex()) {
-            delayedMoves.addFirst(move1 -> {
-                move1.setAction(ActionType.SCALE);
-                move1.setX(enemyNextNuclearStrikeX);
-                move1.setY(enemyNextNuclearStrikeY);
-                move1.setFactor(0.1);
-            });
-            return;
-        }
-
-
         log("Schedule new moves");
 
         boolean isArrvMoving = world.getTickIndex() < 200;
         for (VehicleGroupInfo myGroup : myGroups) {
+
 
             if (scheduledStrike != null && myGroup.vehicles.contains(scheduledStrike.myVehicle)) {
                 log("Skip scheduling for acting group " + myGroup);
@@ -371,7 +377,7 @@ public final class MyStrategy implements Strategy {
                 continue;
             }*/
 
-
+           // scaleToKover(myGroup);
             if (isArrvMoving && (myGroup.vehicleType == IFV || myGroup.vehicleType == TANK)) {
 
             /*    VehicleGroupInfo arrvs = findGroup(myGroups, ARRV);
@@ -510,13 +516,10 @@ public final class MyStrategy implements Strategy {
     }
 
     private void scaleToKover(VehicleGroupInfo myGroup) {
-        if (!koverGroups.contains(myGroup)) {
+        Rectangle2D rect = myGroup.pointsInfo.rect;
+        if (rect.getWidth() < 200 || rect.getHeight() < 200) {
             scheduleSelectAll(myGroup.vehicleType);
             delayedMoves.add(move1 -> {
-                if (koverGroups.contains(myGroup)) {
-                    return;
-                }
-                koverGroups.add(myGroup);
                 move1.setFactor(10);
                 move1.setX(myGroup.getAveragePoint().getX());
                 move1.setY(myGroup.getAveragePoint().getY());

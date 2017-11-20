@@ -97,9 +97,9 @@ public class RewindClientWrapper implements MyStrategyPainter {
             for (int i = 0; i < myGroups.size(); i++) {
                 VehicleGroupInfo myGroup = myGroups.get(i);
                 Point2D ap = myGroup.getAveragePoint();
-                rc.circle(ap.getX(), ap.getY(), 4, COLOR_MY_GROUP, LAYER_GENERIC);
+                rc.circle(ap.getX(), ap.getY(), 4, COLOR_MY_GROUP, 5);
                 Rectangle2D rect = myGroup.pointsInfo.rect;
-                rc.rect(rect.getMinX(), rect.getMinY(), rect.getMaxX(), rect.getMaxY(), COLOR_MY_GROUP, LAYER_GENERIC);
+                rc.rect(rect.getMinX(), rect.getMinY(), rect.getMaxX(), rect.getMaxY(), COLOR_MY_GROUP, 5);
                 if (myGroup.moveToPoint != null) {
                     rc.circle(myGroup.moveToPoint.getX(), myGroup.moveToPoint.getY(), 4, COLOR_MOVE_POINT, LAYER_GENERIC);
                     rc.line(ap.getX(), ap.getY(), myGroup.moveToPoint.getX(), myGroup.moveToPoint.getY(), COLOR_MOVE_POINT, LAYER_GENERIC);
@@ -174,8 +174,13 @@ public class RewindClientWrapper implements MyStrategyPainter {
 
     @Override
     public void onInitializeStrategy() {
-        rc = new RewindClient();
-
+        try {
+            rc = new RewindClient();
+        }catch (Exception e) {
+            e.printStackTrace();
+            mys.setPainter(new EmptyPaintner());
+            return;
+        }
         for (int x = 0; x < mys.terrainTypeByCellXY.length; x++) {
             for (int y = 0; y < mys.terrainTypeByCellXY[x].length; y++) {
                 RewindClient.AreaType areaType = getAreaType(mys.terrainTypeByCellXY[x][y]);
