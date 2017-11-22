@@ -11,6 +11,10 @@ public final class MyStrategy implements Strategy {
     public static final double GROUP_SIZE = 50;
     public static final double GROUP_HALF_SIZE = GROUP_SIZE / 2;
     public static final int MIN_NUCLEAR_DMG = 500;
+    public static final List<VehicleType> FIGHTER_PREF_TARGETS = Arrays.asList(HELICOPTER, FIGHTER);
+    public static final List<VehicleType> HELI_PREF_TARGETS = Arrays.asList(TANK, ARRV, HELICOPTER, IFV, FIGHTER);
+    public static final double SHOULD_HEAL_TRESHOLD = 0.64;
+    private static final String SPECIAL_TASK = "SPECIAL_TASK";
     private static int constantId;
 
     private MyStrategyPainter painter = new EmptyPaintner();
@@ -249,6 +253,14 @@ public final class MyStrategy implements Strategy {
         enemyGroups = getGroups(Ownership.ENEMY);
         refreshGroups(myGroups);
 
+
+        VehicleGroupInfo enHelicopters = findGroup(enemyGroups, HELICOPTER);
+        VehicleGroupInfo enIFV = findGroup(enemyGroups, IFV);
+        VehicleGroupInfo enFighters = findGroup(enemyGroups, FIGHTER);
+        VehicleGroupInfo enArrv = findGroup(enemyGroups, ARRV);
+        VehicleGroupInfo enTanks = findGroup(enemyGroups, TANK);
+
+
         if (me.getRemainingNuclearStrikeCooldownTicks() == 0 && scheduledStrike == null) {
             int remainingHp = um.enemyStats.remainingHp;
             int minNuclearDmg = (int) Math.min(MyStrategy.MIN_NUCLEAR_DMG, remainingHp * 0.7);
@@ -399,7 +411,7 @@ public final class MyStrategy implements Strategy {
                 double currentHpPercent = myGroup.getHpPercent();
 
                 VehicleGroupInfo arrvGroup = findGroup(myGroups, ARRV);
-                if (arrvGroup != null && currentHpPercent < 0.75) {
+                if (arrvGroup != null && currentHpPercent < SHOULD_HEAL_TRESHOLD) {
                     myGroup.shouldHeal = true;
                 } else if (arrvGroup == null || currentHpPercent > 0.95) {
                     myGroup.shouldHeal = false;
@@ -407,12 +419,31 @@ public final class MyStrategy implements Strategy {
 
                 if (myGroup.shouldHeal) {
                     moveToAllyGroup(myGroup, ARRV);
+                    log(SPECIAL_TASK + " heli going heal");
                     continue;
                 }
 
-                //TODO attack enemy
+                if (enFighters == null || enFighters.count / (myGroup.count * 1.f) <= 0.3 /*|| getSmartDistance(myGroup, enFighters) > 400*/) {
 
-                boolean specialCase = moveToAllyGroup(myGroup, IFV); //TODO HEAL
+                    if (enTanks != null && getSmartDistance(enTanks, enIFV) > 100) {  //attack tanks
+                        scheduleSelectAll(myGroup.vehicleType);
+                        scheduleMoveToPoint(myGroup, enTanks);
+                        log(SPECIAL_TASK + " heli attacks tanks");
+                        continue;
+                    }
+
+                    if (enArrv != null && getSmartDistance(enArrv, enIFV) > 100) {  //attack arrv
+                        scheduleSelectAll(myGroup.vehicleType);
+                        scheduleMoveToPoint(myGroup, enArrv);
+                        log(SPECIAL_TASK + " heli attacks arrv");
+                        continue;
+                    }
+                }
+
+
+                //TODO attack enemy if fighters are low
+
+                boolean specialCase = moveToAllyGroup(myGroup, IFV);
                 if (specialCase) {
                     continue;
                 }
@@ -431,22 +462,23 @@ public final class MyStrategy implements Strategy {
 
                 if (myGroup.shouldHeal) {
                     moveToAllyGroup(myGroup, ARRV);
+                    log(SPECIAL_TASK + " fighters going heal");
                     continue;
                 }
 
-                VehicleGroupInfo enHelicopters = findGroup(enemyGroups, HELICOPTER);
-                VehicleGroupInfo enIFV = findGroup(enemyGroups, IFV);
-                VehicleGroupInfo enFighters = findGroup(enemyGroups, FIGHTER);
+
                 if (enHelicopters != null && enIFV != null
                         && enHelicopters.getAveragePoint().getDistanceTo(enIFV.getAveragePoint()) > GROUP_SIZE * 1.3f) {
                     scheduleSelectAll(FIGHTER);
                     scheduleMoveToPoint(myGroup, enHelicopters);
                     specialCase = true;
+                    log(SPECIAL_TASK + " fighters attack heli");
                 } else if (world.getTickIndex() > 140 && enFighters != null && enIFV != null
                         && enFighters.getAveragePoint().getDistanceTo(enIFV.getAveragePoint()) > GROUP_SIZE * 1.3f) {
                     scheduleSelectAll(FIGHTER);
                     scheduleMoveToPoint(myGroup, enFighters);
                     specialCase = true;
+                    log(SPECIAL_TASK + " fighters attack fighters");
                 }
 
                 if (!specialCase) {
@@ -543,6 +575,13 @@ public final class MyStrategy implements Strategy {
             }
         }
 */
+    }
+
+    private double getSmartDistance(VehicleGroupInfo g1, VehicleGroupInfo g2) {
+        if (g2 == null) {
+            return 2000;
+        }
+        return g1.getAveragePoint().getDistanceTo(g2.getAveragePoint());
     }
 
     private void scaleToKover(VehicleGroupInfo myGroup) {
@@ -748,9 +787,9 @@ public final class MyStrategy implements Strategy {
     private static List<VehicleType> getPreferredTargetType(VehicleType vehicleType) {
         switch (vehicleType) {
             case FIGHTER:
-                return Arrays.asList(HELICOPTER, FIGHTER);
+                return FIGHTER_PREF_TARGETS;
             case HELICOPTER:
-                return Arrays.asList(TANK, ARRV, HELICOPTER, IFV, FIGHTER);
+                return HELI_PREF_TARGETS;
             case IFV:
                 return Arrays.asList(FIGHTER, HELICOPTER, IFV, ARRV, TANK);
             case TANK:
