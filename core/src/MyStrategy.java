@@ -377,7 +377,7 @@ public final class MyStrategy implements Strategy {
                 continue;
             }*/
 
-           // scaleToKover(myGroup);
+            // scaleToKover(myGroup);
             if (isArrvMoving && (myGroup.vehicleType == IFV || myGroup.vehicleType == TANK)) {
 
             /*    VehicleGroupInfo arrvs = findGroup(myGroups, ARRV);
@@ -396,7 +396,23 @@ public final class MyStrategy implements Strategy {
                 continue;
             }
             if (myGroup.vehicleType == HELICOPTER) {
-                boolean specialCase = moveToAllyGroup(myGroup, IFV);
+                double currentHpPercent = myGroup.getHpPercent();
+
+                VehicleGroupInfo arrvGroup = findGroup(myGroups, ARRV);
+                if (arrvGroup != null && currentHpPercent < 0.75) {
+                    myGroup.shouldHeal = true;
+                } else if (arrvGroup == null || currentHpPercent > 0.95) {
+                    myGroup.shouldHeal = false;
+                }
+
+                if (myGroup.shouldHeal) {
+                    moveToAllyGroup(myGroup, ARRV);
+                    continue;
+                }
+
+                //TODO attack enemy
+
+                boolean specialCase = moveToAllyGroup(myGroup, IFV); //TODO HEAL
                 if (specialCase) {
                     continue;
                 }
@@ -404,6 +420,20 @@ public final class MyStrategy implements Strategy {
 
             if (myGroup.vehicleType == FIGHTER) {
                 boolean specialCase = false;
+                double currentHpPercent = myGroup.getHpPercent();
+
+                VehicleGroupInfo arrvGroup = findGroup(myGroups, ARRV);
+                if (arrvGroup != null && currentHpPercent < 0.75) {
+                    myGroup.shouldHeal = true;
+                } else if (arrvGroup == null || currentHpPercent > 0.95) {
+                    myGroup.shouldHeal = false;
+                }
+
+                if (myGroup.shouldHeal) {
+                    moveToAllyGroup(myGroup, ARRV);
+                    continue;
+                }
+
                 VehicleGroupInfo enHelicopters = findGroup(enemyGroups, HELICOPTER);
                 VehicleGroupInfo enIFV = findGroup(enemyGroups, IFV);
                 VehicleGroupInfo enFighters = findGroup(enemyGroups, FIGHTER);
@@ -742,5 +772,21 @@ public final class MyStrategy implements Strategy {
 
     public MyStrategyPainter getPainter() {
         return painter;
+    }
+
+    public int getDurability(VehicleType vehicleType) {
+        switch (vehicleType) {
+            case ARRV:
+                return game.getArrvDurability();
+            case FIGHTER:
+                return game.getFighterDurability();
+            case HELICOPTER:
+                return game.getHelicopterDurability();
+            case IFV:
+                return game.getIfvDurability();
+            case TANK:
+                return game.getTankDurability();
+        }
+        return 100;
     }
 }

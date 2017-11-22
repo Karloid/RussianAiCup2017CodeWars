@@ -14,6 +14,7 @@ public class VehicleGroupInfo {
     public List<VehicleWrapper> vehicles = new ArrayList<>();
     public int lastShrinkI;
     public boolean isScaled;
+    public boolean shouldHeal;
 
     public VehicleGroupInfo(Ownership ownership, VehicleType vehicleType, MyStrategy myStrategy) {
         this.ownership = ownership;
@@ -59,5 +60,14 @@ public class VehicleGroupInfo {
 
         }
         return o;
+    }
+
+    public double getHpPercent() {
+        int sum = 0;
+        for (int i = 0; i < vehicles.size(); i++) {
+            VehicleWrapper vehicle = vehicles.get(i);
+            sum += vehicle.v.getDurability();
+        }
+        return sum / (vehicles.size() * myStrategy.getDurability(vehicleType) * 1.f);
     }
 }
