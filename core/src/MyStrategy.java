@@ -3,6 +3,7 @@ import model.*;
 import java.awt.geom.Rectangle2D;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static model.VehicleType.*;
 
@@ -744,10 +745,29 @@ public final class MyStrategy implements Strategy {
                 move.setGroup(groupInfo.groupNumber);
             });
         } else {
-            delayedMoves.add(move -> {
-                move.setAction(ActionType.CLEAR_AND_SELECT);
-                move.setGroup(groupInfo.groupNumber);
-            });
+            boolean isAlreadySelected = true;
+            List<VehicleWrapper> selectedUnits = um.streamVehicles(Ownership.ALLY).filter(vehicleWrapper -> vehicleWrapper.v.isSelected()).collect(Collectors.toList());
+
+            if (selectedUnits.size() != groupInfo.vehicles.size()) {
+                isAlreadySelected = false;
+            }
+            List<VehicleWrapper> vehicles = groupInfo.vehicles;
+            for (int i = 0; i < vehicles.size(); i++) {
+                VehicleWrapper vehicle = vehicles.get(i);
+                if (!selectedUnits.contains(vehicle)) {
+                    isAlreadySelected = false;
+                    break;
+                }
+            }
+
+            if (isAlreadySelected) {
+                log("isAlreadySelected group, skip selection " + groupInfo);
+            } else {
+                delayedMoves.add(move -> {
+                    move.setAction(ActionType.CLEAR_AND_SELECT);
+                    move.setGroup(groupInfo.groupNumber);
+                });
+            }
         }
     }
 
