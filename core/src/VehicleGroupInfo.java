@@ -15,6 +15,7 @@ public class VehicleGroupInfo {
     public int lastShrinkI;
     public boolean isScaled;
     public boolean shouldHeal;
+    public int groupNumber;
 
     public VehicleGroupInfo(Ownership ownership, VehicleType vehicleType, MyStrategy myStrategy) {
         this.ownership = ownership;

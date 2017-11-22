@@ -51,6 +51,7 @@ public final class MyStrategy implements Strategy {
     private double enemyNextNuclearStrikeY;
     public List<VehicleGroupInfo> koverGroups = new ArrayList<>();
     private boolean handledOpponentNuclearShouldScaleDown;
+    private int groupNextIndex = 1;
 
 
     @Override
@@ -374,7 +375,7 @@ public final class MyStrategy implements Strategy {
 
             if (!myGroup.isScaled) {
                 myGroup.isScaled = true;
-                scheduleSelectAll(myGroup.vehicleType);
+                scheduleSelectAll(myGroup);
                 delayedMoves.add(move1 -> {
                     move1.setAction(ActionType.SCALE);
                     move1.setX(myGroup.getAveragePoint().getX());
@@ -402,7 +403,7 @@ public final class MyStrategy implements Strategy {
                         x = GROUP_HALF_SIZE;
                     }
                     Point2D point = new Point2D(x, y);
-                    scheduleSelectAll(myGroup.vehicleType);
+                    scheduleSelectAll(myGroup);
                     scheduleMoveToPoint(myGroup, point);
                 }*/
                 continue;
@@ -426,14 +427,14 @@ public final class MyStrategy implements Strategy {
                 if (enFighters == null || enFighters.count / (myGroup.count * 1.f) <= 0.3 /*|| getSmartDistance(myGroup, enFighters) > 400*/) {
 
                     if (enTanks != null && getSmartDistance(enTanks, enIFV) > 100) {  //attack tanks
-                        scheduleSelectAll(myGroup.vehicleType);
+                        scheduleSelectAll(myGroup);
                         scheduleMoveToPoint(myGroup, enTanks);
                         log(SPECIAL_TASK + " heli attacks tanks");
                         continue;
                     }
 
                     if (enArrv != null && getSmartDistance(enArrv, enIFV) > 100) {  //attack arrv
-                        scheduleSelectAll(myGroup.vehicleType);
+                        scheduleSelectAll(myGroup);
                         scheduleMoveToPoint(myGroup, enArrv);
                         log(SPECIAL_TASK + " heli attacks arrv");
                         continue;
@@ -469,13 +470,13 @@ public final class MyStrategy implements Strategy {
 
                 if (enHelicopters != null && enIFV != null
                         && enHelicopters.getAveragePoint().getDistanceTo(enIFV.getAveragePoint()) > GROUP_SIZE * 1.3f) {
-                    scheduleSelectAll(FIGHTER);
+                    scheduleSelectAll(myGroup);
                     scheduleMoveToPoint(myGroup, enHelicopters);
                     specialCase = true;
                     log(SPECIAL_TASK + " fighters attack heli");
                 } else if (world.getTickIndex() > 140 && enFighters != null && enIFV != null
                         && enFighters.getAveragePoint().getDistanceTo(enIFV.getAveragePoint()) > GROUP_SIZE * 1.3f) {
-                    scheduleSelectAll(FIGHTER);
+                    scheduleSelectAll(myGroup);
                     scheduleMoveToPoint(myGroup, enFighters);
                     specialCase = true;
                     log(SPECIAL_TASK + " fighters attack fighters");
@@ -502,11 +503,11 @@ public final class MyStrategy implements Strategy {
                     } else {
                         x = GROUP_HALF_SIZE;
                     }
-                    scheduleSelectAll(myGroup.vehicleType);
+                    scheduleSelectAll(myGroup);
                     scheduleMoveToPoint(myGroup, new Point2D(x, y));
                     continue;
                 } else {
-                    //scheduleSelectAll(myGroup.vehicleType);
+                    //scheduleSelectAll(myGroup);
                     groups.removeIf(vehicleGroupInfo -> vehicleGroupInfo == myGroup);
 
                     if (groups.isEmpty()) {
@@ -524,7 +525,7 @@ public final class MyStrategy implements Strategy {
                         toGroup = groups.get((int) (groups.size() * random.nextFloat()));
                     }
 
-                    scheduleSelectAll(myGroup.vehicleType);
+                    scheduleSelectAll(myGroup);
                     if (toGroup.moveToPoint != null) {
                         // scheduleMoveToPoint(myGroup, new Point2D(toGroup.getAveragePoint().getX() + toGroup.moveToPoint.getX(),
                         //         toGroup.getAveragePoint().getY() + toGroup.moveToPoint.getY()));
@@ -540,7 +541,7 @@ public final class MyStrategy implements Strategy {
             List<VehicleType> targetType = getPreferredTargetType(myGroup.vehicleType);
             VehicleGroupInfo enemyGroup = priorityFilter(enemyGroups, targetType);
             if (enemyGroup == null) {
-              /*  scheduleSelectAll(myGroup.vehicleType);
+              /*  scheduleSelectAll(myGroup);
 
                 Point2D point = this.centerPoint;
                 if (myGroup.vehicleType == FIGHTER) {
@@ -550,7 +551,7 @@ public final class MyStrategy implements Strategy {
                 scheduleMoveToPoint(myGroup, point);*/
                 scaleToKover(myGroup);
             } else {
-                scheduleSelectAll(myGroup.vehicleType);
+                scheduleSelectAll(myGroup);
 
                 scheduleMoveToPoint(myGroup, enemyGroup);
             }
@@ -587,7 +588,7 @@ public final class MyStrategy implements Strategy {
     private void scaleToKover(VehicleGroupInfo myGroup) {
         Rectangle2D rect = myGroup.pointsInfo.rect;
         if (rect.getWidth() < 200 || rect.getHeight() < 200) {
-            scheduleSelectAll(myGroup.vehicleType);
+            scheduleSelectAll(myGroup);
             delayedMoves.add(move1 -> {
                 move1.setFactor(10);
                 move1.setX(myGroup.getAveragePoint().getX());
@@ -598,7 +599,7 @@ public final class MyStrategy implements Strategy {
 
     private void scheduleShrink(VehicleGroupInfo myGroup) {
         myGroup.lastShrinkI = world.getTickIndex();
-        scheduleSelectAll(myGroup.vehicleType);
+        scheduleSelectAll(myGroup);
         delayedMoves.add(move1 -> {
             myGroup.lastShrinkI = world.getTickIndex();
             move1.setAction(ActionType.SCALE);
@@ -650,7 +651,7 @@ public final class MyStrategy implements Strategy {
         boolean specialCase = false;
         for (VehicleGroupInfo group : myGroups) {
             if (group.vehicleType == allyType) {
-                scheduleSelectAll(myGroup.vehicleType);
+                scheduleSelectAll(myGroup);
                 scheduleMoveToPoint(myGroup, group);
                 specialCase = true;
             }
@@ -726,13 +727,28 @@ public final class MyStrategy implements Strategy {
         myGroup.moveToPointAt = world.getTickIndex();
     }
 
-    private boolean scheduleSelectAll(VehicleType type) {
-        return delayedMoves.add(move -> {
-            move.setAction(ActionType.CLEAR_AND_SELECT);
-            move.setRight(world.getWidth());
-            move.setBottom(world.getHeight());
-            move.setVehicleType(type);
-        });
+    private void scheduleSelectAll(VehicleGroupInfo groupInfo) {
+        if (groupInfo.groupNumber == 0) {
+            delayedMoves.add(move -> {
+                move.setAction(ActionType.CLEAR_AND_SELECT);
+                move.setRight(world.getWidth());
+                move.setBottom(world.getHeight());
+                move.setVehicleType(groupInfo.vehicleType);
+            });
+
+            delayedMoves.add(move -> {
+                groupInfo.groupNumber = groupNextIndex;
+                groupNextIndex++;
+
+                move.setAction(ActionType.ASSIGN);
+                move.setGroup(groupInfo.groupNumber);
+            });
+        } else {
+            delayedMoves.add(move -> {
+                move.setAction(ActionType.CLEAR_AND_SELECT);
+                move.setGroup(groupInfo.groupNumber);
+            });
+        }
     }
 
     void log(String s) {
