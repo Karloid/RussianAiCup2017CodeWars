@@ -62,7 +62,7 @@ public class NuclearStrike {
                     }
 
                     if (veh.v.getType() == VehicleType.ARRV) {
-                        dmg *= 0.7f;
+                        dmg *= 0.6f;
                     }
 
                     boolean isEnemy = veh.isEnemy;
