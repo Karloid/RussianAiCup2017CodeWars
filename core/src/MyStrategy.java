@@ -16,6 +16,7 @@ public final class MyStrategy implements Strategy {
     public static final List<VehicleType> HELI_PREF_TARGETS = Arrays.asList(TANK, ARRV, HELICOPTER, IFV, FIGHTER);
     public static final double SHOULD_HEAL_TRESHOLD = 0.64;
     private static final String SPECIAL_TASK = "SPECIAL_TASK";
+    private static final String WARN = "WARN";
     private static int constantId;
 
     private MyStrategyPainter painter = new EmptyPaintner();
@@ -142,41 +143,9 @@ public final class MyStrategy implements Strategy {
 
             if (true) {
 
-                myGroup.potentialMap = calcMap(myGroup);
-                myGroup.potentialMapCalcAt = world.getTickIndex();
 
-
-                Point2D averagePoint = myGroup.getAveragePoint();
-
-                averagePoint = averagePoint.div(cellSize);
-
-                int myX = averagePoint.getIntX();
-                int myY = averagePoint.getIntY();
-
-                Point2D bestChoice = null;
-                int half = 11 / 2;
-                for (int x = myX - half; x <= myX + half; x++) {
-                    for (int y = myY - half; y <= myY + half; y++) {
-                        if (y == myY && x == myX) {
-                            continue;
-                        }
-                        Point2D currentChoice = new Point2D(x, y);
-                        if (Math.ceil(currentChoice.getDistanceTo(myX, myY)) > half + 0.01) {
-                            continue;
-                        }
-
-                        currentChoice.setVal(myGroup.potentialMap.get(x, y));
-                        if (bestChoice == null || bestChoice.getVal() < currentChoice.getVal()) {
-                            //TODO check safety
-                            bestChoice = currentChoice;
-                        }
-                    }
-                }
-
-                if (bestChoice != null) {
-                    scheduleSelectAll(myGroup);
-                    scheduleMoveToPoint(myGroup, bestChoice.mul(cellSize).add(cellSize / 2, cellSize / 2));
-                }
+                scheduleSelectAll(myGroup);
+                schedulePotentialMoveToPoint(myGroup);
             }
         }
     }
@@ -346,7 +315,7 @@ public final class MyStrategy implements Strategy {
             {
                 HashMap<Point2D, Integer> myGroundUnits = new HashMap<>(getUnitsCount(false).get(TANK));
 
-                if (ifvShouldHeal) {
+                if (!ifvShouldHeal) {
                     myGroundUnits.putAll(getUnitsCount(false).get(ARRV));
                 }
 
@@ -1096,8 +1065,56 @@ public final class MyStrategy implements Strategy {
     private void scheduleMoveToPoint(VehicleGroupInfo myGroup, Point2D point) {
         int scheduledAt = world.getTickIndex();
         delayedMoves.add(move -> {
-            log("executed move with delay " + (world.getTickIndex() - scheduledAt) );
+            log("executed move with delay " + (world.getTickIndex() - scheduledAt));
             actualMoveToPoint(myGroup, point, move);
+        });
+    }
+
+    private void schedulePotentialMoveToPoint(VehicleGroupInfo myGroup) {
+        int scheduledAt = world.getTickIndex();
+        delayedMoves.add(move -> {
+            log("executed potential move with delay " + (world.getTickIndex() - scheduledAt));
+
+            myGroup.potentialMap = calcMap(myGroup);
+            myGroup.potentialMapCalcAt = world.getTickIndex();
+
+
+            Point2D averagePoint = myGroup.getAveragePoint();
+
+            averagePoint = averagePoint.div(cellSize);
+
+            int myX = averagePoint.getIntX();
+            int myY = averagePoint.getIntY();
+
+            Point2D bestChoice = null;
+            int half = 11 / 2;
+            if (myGroup.vehicleType == TANK || myGroup.vehicleType == IFV) {
+                half--;
+            }
+            for (int x = myX - half; x <= myX + half; x++) {
+                for (int y = myY - half; y <= myY + half; y++) {
+                    if (y == myY && x == myX) {
+                        continue;
+                    }
+                    Point2D currentChoice = new Point2D(x, y);
+                    if (Math.ceil(currentChoice.getDistanceTo(myX, myY)) > half + 0.01) {
+                        continue;
+                    }
+
+                    currentChoice.setVal(myGroup.potentialMap.get(x, y));
+                    if (bestChoice == null || bestChoice.getVal() < currentChoice.getVal()) {
+                        //TODO check safety
+                        bestChoice = currentChoice;
+                    }
+                }
+            }
+
+            if (bestChoice != null) {
+                scheduleSelectAll(myGroup);
+                actualMoveToPoint(myGroup, bestChoice.mul(cellSize).add(cellSize / 2, cellSize / 2), move); //TODO scale\rotate when needed
+            } else {
+                log(WARN + "POTENTIAL BEST CHOICE NOT FOUND");
+            }
         });
     }
 
@@ -1128,10 +1145,6 @@ public final class MyStrategy implements Strategy {
 
             move.setX(dx);
             move.setY(dy);
-        }
-        //TODO look at tanks group
-        if (myGroup.vehicleType == IFV) {
-            //  move.setMaxSpeed(game.getTankSpeed() * 0.6);
         }
         log("oldMove to point " + p + " group " + myGroup);
         myGroup.moveToPoint = p;
