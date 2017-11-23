@@ -151,4 +151,12 @@ public class VehicleWrapper {
         }
         return k;
     }
+
+    public int getCellX(int cellSize) {
+        return (int) (getX() / cellSize);
+    }
+
+    public int getCellY(int cellSize) {
+        return (int) (getY() / cellSize);
+    }
 }

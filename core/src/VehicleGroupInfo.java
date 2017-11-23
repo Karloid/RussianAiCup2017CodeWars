@@ -1,7 +1,9 @@
 import model.VehicleType;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class VehicleGroupInfo {
     final VehicleType vehicleType; //just testing
@@ -16,6 +18,7 @@ public class VehicleGroupInfo {
     public boolean isScaled;
     public boolean shouldHeal;
     public int groupNumber;
+    public Map<VehicleType, PlainArray> potentialMaps = new HashMap<>();
 
     public VehicleGroupInfo(Ownership ownership, VehicleType vehicleType, MyStrategy myStrategy) {
         this.ownership = ownership;

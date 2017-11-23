@@ -4,9 +4,11 @@ import static java.lang.Math.pow;
 
 public class PlainArray {
 
-    private final int[] array;
-    private final int cellsWidth;
-    private final int cellsHeight;
+    private final double[] array;
+    public final int cellsWidth;
+    public final int cellsHeight;
+    private double max = Double.MIN_VALUE;
+    private double min = 0;
 
 
 /*     public static final int PLAIN_SMOOTH = constantId++;
@@ -15,10 +17,10 @@ public class PlainArray {
     PlainArray(int cellsWidth, int cellsHeight) {
         this.cellsWidth = cellsWidth;
         this.cellsHeight = cellsHeight;
-        array = new int[this.cellsWidth * cellsHeight];
+        array = new double[this.cellsWidth * cellsHeight];
     }
 
-    int get(int x, int y) {
+    double get(int x, int y) {
         if (!inBounds(x, y)) {
             return 0;
         }
@@ -29,14 +31,27 @@ public class PlainArray {
         if (!inBounds(x, y)) {
             return;
         }
-        array[y * cellsWidth + x] += val;
+        double newValue = array[y * cellsWidth + x] + val;
+        array[y * cellsWidth + x] = newValue;
+
+        checkNewValue(newValue);
     }
 
-    void set(int x, int y, int val) {
+    private void checkNewValue(double newValue) {
+        if (newValue > max) {
+            max = newValue;
+        }
+        if (newValue < min) {
+            min = newValue;
+        }
+    }
+
+    void set(int x, int y, double val) {
         if (!inBounds(x, y)) {
             return;
         }
         array[y * cellsWidth + x] = val;
+        checkNewValue(val);
     }
 
     private boolean inBounds(int x, int y) {
@@ -63,5 +78,13 @@ public class PlainArray {
                 }
             }
         }
+    }
+
+    public double getMax() {
+        return max;
+    }
+
+    public double getMin() {
+        return min;
     }
 }

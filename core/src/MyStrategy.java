@@ -55,6 +55,11 @@ public final class MyStrategy implements Strategy {
     private int groupNextIndex = 1;
 
 
+    public int cellSize = 32;
+    public int worldWidth;
+    public int worldHeight;
+
+
     @Override
     public void move(Player me, World world, Game game, Move move) {
         try {
@@ -75,7 +80,8 @@ public final class MyStrategy implements Strategy {
             } else if (executeDelayedMove()) {
                 delayedMovesSize();
             } else {
-                oldMove();
+
+                potentialMove();
 
                 executeDelayedMove();
                 delayedMovesSize();
@@ -108,6 +114,54 @@ public final class MyStrategy implements Strategy {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    private void potentialMove() {
+
+        refreshGroups(myGroups);
+
+        if (tryPickNuclearTarget()) return;
+
+        tryEvadeNuclearTarget();
+
+
+        //TODO calc potentials
+
+        for (VehicleGroupInfo myGroup : myGroups) {
+
+            if (myGroup.vehicleType == FIGHTER) {
+                myGroup.potentialMaps.put(FIGHTER, calcMap(myGroup.vehicleType, FIGHTER));
+
+            }
+        }
+    }
+
+    private PlainArray calcMap(VehicleType myType, VehicleType enemyType) {
+        PlainArray plainArray = new PlainArray((int) game.getWorldWidth() / cellSize, (int) game.getWorldHeight() / cellSize);
+
+        VehicleGroupInfo eg = null;
+        for (VehicleGroupInfo enemyGroup : enemyGroups) {
+            if (enemyGroup.vehicleType == enemyType) {
+
+                eg = enemyGroup;
+
+
+                break;
+            }
+        }
+        if (eg == null) {
+            return plainArray;
+        }
+
+        for (VehicleWrapper vehicle : eg.vehicles) {
+            plainArray.add(vehicle.getCellX(cellSize), vehicle.getCellY(cellSize), 1);
+
+            PlainArray countArray = plainArray;
+
+            plainArray = new PlainArray(countArray.cellsWidth, countArray.cellsHeight);
+        }
+
+        return plainArray;
     }
 
     private void printCurrentAction() {
@@ -214,7 +268,9 @@ public final class MyStrategy implements Strategy {
             terrainTypeByCellXY = world.getTerrainByCellXY();
             weatherTypeByCellXY = world.getWeatherByCellXY();
 
-            centerPoint = new Point2D(world.getWidth() / 2, world.getHeight() / 2);
+            worldWidth = (int) world.getWidth();
+            worldHeight = (int) world.getHeight();
+            centerPoint = new Point2D(worldWidth / 2, worldHeight / 2);
 
             enemyGroups = getGroups(Ownership.ENEMY);
             myGroups = getGroups(Ownership.ALLY);
@@ -263,100 +319,9 @@ public final class MyStrategy implements Strategy {
         VehicleGroupInfo enTanks = findGroup(enemyGroups, TANK);
 
 
-        if (me.getRemainingNuclearStrikeCooldownTicks() == 0 && scheduledStrike == null) {
-            int remainingHp = um.enemyStats.remainingHp;
-            int minNuclearDmg = (int) Math.min(MyStrategy.MIN_NUCLEAR_DMG, remainingHp * 0.7);
+        if (tryPickNuclearTarget()) return;
 
-
-            NuclearStrike max = NuclearStrike.getMaxDmg(this);
-
-            if (max != null && max.predictedDmg > minNuclearDmg) {
-                scheduledStrike = max;
-                scheduledStrike.createdAt = world.getTickIndex();
-
-
-                delayedMoves.addFirst(move1 -> {
-                    max.actualTarget = max.target.getPos(game.getTacticalNuclearStrikeDelay());
-                    double distance = max.actualTarget.getDistanceTo(max.myVehicle);
-                    double maxDistance = max.myVehicle.getActualVisionRange(); //TODO calc real vision range
-                    if (distance > maxDistance) {
-                        log(Utils.LOG_NUCLEAR_STRIKE + " correct point from " + max.actualTarget + " distance is " + max.actualTarget.getDistanceTo(max.myVehicle) + " maxDistance: " + maxDistance);
-                        Point2D vector = Point2D.vector(max.myVehicle.getX(), max.myVehicle.getY(), max.actualTarget.getX(), max.actualTarget.getY());
-
-                        double k = maxDistance / distance;
-                        max.actualTarget = new Point2D(max.myVehicle.getX(0) + vector.getX() * k, max.myVehicle.getY(0) + vector.getY() * k);
-                        log(Utils.LOG_NUCLEAR_STRIKE + " correct point to " + max.actualTarget + " distance is " + max.actualTarget.getDistanceTo(max.myVehicle) + " maxDistance: " + maxDistance);
-                    }
-                    max.recalcPredicted();
-                    if (max.predictedDmg < remainingHp) {
-                        log(Utils.LOG_NUCLEAR_STRIKE + " find new target or cancel");
-                        scheduledStrike.finish();
-                        scheduledStrike.canceled = true;
-                        didNuclearStrikes.add(scheduledStrike);
-                        scheduledStrike = null;
-                    }
-
-                    move1.setAction(ActionType.TACTICAL_NUCLEAR_STRIKE);
-                    move1.setVehicleId(max.myVehicle.v.getId());
-
-                    move1.setX(max.actualTarget.getX());
-                    move1.setY(max.actualTarget.getY());
-
-
-                    max.startedAt = world.getTickIndex();
-                    log(Utils.LOG_NUCLEAR_STRIKE + " start " + max);
-                });
-
-                delayedMoves.addFirst(move1 -> {
-                    move.setAction(ActionType.MOVE);
-                    move.setX(0);
-                    move.setY(0);
-                    log(Utils.LOG_NUCLEAR_STRIKE + " stop unit " + max);
-                });
-
-                delayedMoves.addFirst(move1 -> {
-                    clearAndSelectOneUnit(max, move1, max.myVehicle);  //TODO select group
-
-                    scheduledStrike.createdAt = world.getTickIndex();
-                    log(Utils.LOG_NUCLEAR_STRIKE + " select unit " + max);
-                });
-                return;
-            }
-
-        }
-
-        if (opponent.getNextNuclearStrikeTickIndex() != -1 && handledOpponentNuclear != opponent.getNextNuclearStrikeTickIndex()) {
-            handledOpponentNuclear = opponent.getNextNuclearStrikeTickIndex();
-            enemyNextNuclearStrikeX = opponent.getNextNuclearStrikeX();
-            enemyNextNuclearStrikeY = opponent.getNextNuclearStrikeY();
-
-            delayedMoves.addFirst(move1 -> {
-                move1.setAction(ActionType.SCALE);
-                move1.setX(enemyNextNuclearStrikeX);
-                move1.setY(enemyNextNuclearStrikeY);
-                move1.setFactor(0.1);
-
-                handledOpponentNuclearShouldScaleDown = false;
-            });
-
-            delayedMoves.addFirst(move1 -> {
-                move1.setAction(ActionType.SCALE);
-                move1.setX(enemyNextNuclearStrikeX);
-                move1.setY(enemyNextNuclearStrikeY);
-                move1.setFactor(10);
-                handledOpponentNuclearShouldScaleDown = true;
-            });
-            delayedMoves.addFirst(move -> {
-                move.setAction(ActionType.CLEAR_AND_SELECT);
-
-                move.setRight(enemyNextNuclearStrikeX + game.getTacticalNuclearStrikeRadius());
-                move.setLeft(enemyNextNuclearStrikeX - game.getTacticalNuclearStrikeRadius());
-                move.setBottom(enemyNextNuclearStrikeY + game.getTacticalNuclearStrikeRadius());
-                move.setTop(enemyNextNuclearStrikeY - game.getTacticalNuclearStrikeRadius());
-                move.setVehicleType(null);
-            });
-
-        }
+        tryEvadeNuclearTarget();
 
         log("Schedule new moves");
 
@@ -532,6 +497,106 @@ public final class MyStrategy implements Strategy {
             }
         }
 
+    }
+
+    private void tryEvadeNuclearTarget() {
+        if (opponent.getNextNuclearStrikeTickIndex() != -1 && handledOpponentNuclear != opponent.getNextNuclearStrikeTickIndex()) {
+            handledOpponentNuclear = opponent.getNextNuclearStrikeTickIndex();
+            enemyNextNuclearStrikeX = opponent.getNextNuclearStrikeX();
+            enemyNextNuclearStrikeY = opponent.getNextNuclearStrikeY();
+
+            delayedMoves.addFirst(move1 -> {
+                move1.setAction(ActionType.SCALE);
+                move1.setX(enemyNextNuclearStrikeX);
+                move1.setY(enemyNextNuclearStrikeY);
+                move1.setFactor(0.1);
+
+                handledOpponentNuclearShouldScaleDown = false;
+            });
+
+            delayedMoves.addFirst(move1 -> {
+                move1.setAction(ActionType.SCALE);
+                move1.setX(enemyNextNuclearStrikeX);
+                move1.setY(enemyNextNuclearStrikeY);
+                move1.setFactor(10);
+                handledOpponentNuclearShouldScaleDown = true;
+            });
+            delayedMoves.addFirst(move -> {
+                move.setAction(ActionType.CLEAR_AND_SELECT);
+
+                move.setRight(enemyNextNuclearStrikeX + game.getTacticalNuclearStrikeRadius());
+                move.setLeft(enemyNextNuclearStrikeX - game.getTacticalNuclearStrikeRadius());
+                move.setBottom(enemyNextNuclearStrikeY + game.getTacticalNuclearStrikeRadius());
+                move.setTop(enemyNextNuclearStrikeY - game.getTacticalNuclearStrikeRadius());
+                move.setVehicleType(null);
+            });
+
+        }
+    }
+
+    private boolean tryPickNuclearTarget() {
+        if (me.getRemainingNuclearStrikeCooldownTicks() == 0 && scheduledStrike == null) {
+            int remainingHp = um.enemyStats.remainingHp;
+            int minNuclearDmg = (int) Math.min(MyStrategy.MIN_NUCLEAR_DMG, remainingHp * 0.7);
+
+
+            NuclearStrike max = NuclearStrike.getMaxDmg(this);
+
+            if (max != null && max.predictedDmg > minNuclearDmg) {
+                scheduledStrike = max;
+                scheduledStrike.createdAt = world.getTickIndex();
+
+
+                delayedMoves.addFirst(move1 -> {
+                    max.actualTarget = max.target.getPos(game.getTacticalNuclearStrikeDelay());
+                    double distance = max.actualTarget.getDistanceTo(max.myVehicle);
+                    double maxDistance = max.myVehicle.getActualVisionRange(); //TODO calc real vision range
+                    if (distance > maxDistance) {
+                        log(Utils.LOG_NUCLEAR_STRIKE + " correct point from " + max.actualTarget + " distance is " + max.actualTarget.getDistanceTo(max.myVehicle) + " maxDistance: " + maxDistance);
+                        Point2D vector = Point2D.vector(max.myVehicle.getX(), max.myVehicle.getY(), max.actualTarget.getX(), max.actualTarget.getY());
+
+                        double k = maxDistance / distance;
+                        max.actualTarget = new Point2D(max.myVehicle.getX(0) + vector.getX() * k, max.myVehicle.getY(0) + vector.getY() * k);
+                        log(Utils.LOG_NUCLEAR_STRIKE + " correct point to " + max.actualTarget + " distance is " + max.actualTarget.getDistanceTo(max.myVehicle) + " maxDistance: " + maxDistance);
+                    }
+                    max.recalcPredicted();
+                    if (max.predictedDmg < remainingHp) {
+                        log(Utils.LOG_NUCLEAR_STRIKE + " find new target or cancel");
+                        scheduledStrike.finish();
+                        scheduledStrike.canceled = true;
+                        didNuclearStrikes.add(scheduledStrike);
+                        scheduledStrike = null;
+                    }
+
+                    move1.setAction(ActionType.TACTICAL_NUCLEAR_STRIKE);
+                    move1.setVehicleId(max.myVehicle.v.getId());
+
+                    move1.setX(max.actualTarget.getX());
+                    move1.setY(max.actualTarget.getY());
+
+
+                    max.startedAt = world.getTickIndex();
+                    log(Utils.LOG_NUCLEAR_STRIKE + " start " + max);
+                });
+
+                delayedMoves.addFirst(move1 -> {
+                    move.setAction(ActionType.MOVE);
+                    move.setX(0);
+                    move.setY(0);
+                    log(Utils.LOG_NUCLEAR_STRIKE + " stop unit " + max);
+                });
+
+                delayedMoves.addFirst(move1 -> {
+                    clearAndSelectOneUnit(max, move1, max.myVehicle);  //TODO select group
+
+                    scheduledStrike.createdAt = world.getTickIndex();
+                    log(Utils.LOG_NUCLEAR_STRIKE + " select unit " + max);
+                });
+                return true;
+            }
+
+        }
+        return false;
     }
 
     private double getSmartDistance(VehicleGroupInfo g1, VehicleGroupInfo g2) {

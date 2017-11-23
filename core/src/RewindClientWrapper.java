@@ -104,13 +104,18 @@ public class RewindClientWrapper implements MyStrategyPainter {
                     rc.circle(myGroup.moveToPoint.getX(), myGroup.moveToPoint.getY(), 4, COLOR_MOVE_POINT, LAYER_GENERIC);
                     rc.line(ap.getX(), ap.getY(), myGroup.moveToPoint.getX(), myGroup.moveToPoint.getY(), COLOR_MOVE_POINT, LAYER_GENERIC);
                 }
+
+
+                if (myGroup.vehicleType == VehicleType.FIGHTER) {
+                    drawPP(myGroup);
+                }
             }
         }
 
         rc.message(String.format(Locale.US, "\\nMe: %s Opponent: %s\\nActionCooldown: %s\\nNuclearCooldown: %s", mys.me.getScore(), mys.opponent.getScore(), mys.me.getRemainingActionCooldownTicks(), mys.me.getRemainingNuclearStrikeCooldownTicks()));
 
         ArrayList<Map.Entry<ActionType, Integer>> entries = new ArrayList<>(mys.movesStats.entrySet());
-        String msg = "\\nMy moves count: " + mys.movesCount +"\\n";
+        String msg = "\\nMy moves count: " + mys.movesCount + "\\n";
         entries.sort(Comparator.comparingInt(Map.Entry::getValue));
         for (int i = entries.size() - 1; i >= 0; i--) {
             Map.Entry<ActionType, Integer> e = entries.get(i);
@@ -121,6 +126,37 @@ public class RewindClientWrapper implements MyStrategyPainter {
         drawMoveActual();
 
         rc.endFrame();
+    }
+
+    private void drawPP(VehicleGroupInfo myGroup) {
+        for (Map.Entry<VehicleType, PlainArray> entry : myGroup.potentialMaps.entrySet()) {
+
+            PlainArray plainArray = entry.getValue();
+
+            int cellSize = mys.cellSize;
+
+            int cellsX = mys.worldWidth / cellSize;
+            int cellsY = mys.worldHeight / cellSize;
+
+            double max = plainArray.getMax();
+            double min = plainArray.getMin();
+            double delta = max - min;
+            if (delta == 0) {
+                delta = 1;
+            }
+
+            for (int x = 0; x < cellsX; x++) {
+                for (int y = 0; y < cellsY; y++) {
+                    double v = plainArray.get(x, y);
+
+                    int alpha =  (int) (((v - min) / delta) * 220);
+                    if (alpha > 0) {
+                        rc.rect(x * cellSize, y * cellSize, x * cellSize + cellSize, y * cellSize + cellSize, new Color(200, 255, 0, alpha), 1);
+                    }
+                }
+            }
+
+        }
     }
 
     private void drawMoveActual() {
@@ -176,7 +212,7 @@ public class RewindClientWrapper implements MyStrategyPainter {
     public void onInitializeStrategy() {
         try {
             rc = new RewindClient();
-        }catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
             mys.setPainter(new EmptyPaintner());
             return;
