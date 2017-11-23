@@ -386,27 +386,9 @@ public final class MyStrategy implements Strategy {
                 continue;
             }
 
-          /*  if (myGroup.itsTooBig() && world.getTickIndex() - myGroup.lastShrinkI > 400) {
-                scheduleShrink(myGroup);
-                continue;
-            }*/
-
             // scaleToKover(myGroup);
             if (isArrvMoving && (myGroup.vehicleType == IFV || myGroup.vehicleType == TANK)) {
 
-            /*    VehicleGroupInfo arrvs = findGroup(myGroups, ARRV);
-                if (arrvs != null && arrvs.scheduleMoveToPoint != null) {
-                    double x = myGroup.getAveragePoint().getX();
-                    double y = myGroup.getAveragePoint().getY();
-                    if (arrvs.scheduleMoveToPoint.getX() == GROUP_HALF_SIZE) {
-                        y = GROUP_HALF_SIZE;
-                    } else {
-                        x = GROUP_HALF_SIZE;
-                    }
-                    Point2D point = new Point2D(x, y);
-                    scheduleSelectAll(myGroup);
-                    scheduleMoveToPoint(myGroup, point);
-                }*/
                 continue;
             }
             if (myGroup.vehicleType == HELICOPTER) {
@@ -542,14 +524,6 @@ public final class MyStrategy implements Strategy {
             List<VehicleType> targetType = getPreferredTargetType(myGroup.vehicleType);
             VehicleGroupInfo enemyGroup = priorityFilter(enemyGroups, targetType);
             if (enemyGroup == null) {
-              /*  scheduleSelectAll(myGroup);
-
-                Point2D point = this.centerPoint;
-                if (myGroup.vehicleType == FIGHTER) {
-                    point = new Point2D(world.getWidth(), 0);
-                }
-
-                scheduleMoveToPoint(myGroup, point);*/
                 scaleToKover(myGroup);
             } else {
                 scheduleSelectAll(myGroup);
@@ -558,25 +532,6 @@ public final class MyStrategy implements Strategy {
             }
         }
 
-        /*if (true) {
-            return;
-        }*/
-        // Если ни один наш юнит не мог двигаться в течение 60 тиков ...
-        //TODO check moveToPointAt for detecting stuck
-/*
-        if (world.getTickIndex() > 1000 && false) {
-            long allUnits = um.streamVehicles(Ownership.ALLY).count();
-            float notUpdatedUnits = um.streamVehicles(Ownership.ALLY).filter(vehicle -> world.getTickIndex() - um.get(vehicle.v.getId()).movedAt > 60).count() * 1f;
-            if (notUpdatedUnits / allUnits > 0.5) {
-                /// ... находим центр нашей формации ...
-                log("We stuck " + notUpdatedUnits);
-                VehicleGroupInfo group = getGroup(Ownership.ALLY, null);
-                delayedMoves.clear();
-                scheduleSelectAll(null);
-                scheduleMoveToPoint(group, centerPoint);
-            }
-        }
-*/
     }
 
     private double getSmartDistance(VehicleGroupInfo g1, VehicleGroupInfo g2) {
