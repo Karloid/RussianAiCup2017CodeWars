@@ -123,7 +123,7 @@ public final class MyStrategy implements Strategy {
 
         refreshGroups(myGroups);
 
-        if (tryPickNuclearTarget()) return;
+        if (tryPickNuclearTarget()) return;  //my work badly
 
         tryEvadeNuclearTarget();
 
@@ -1073,6 +1073,15 @@ public final class MyStrategy implements Strategy {
     private void schedulePotentialMoveToPoint(VehicleGroupInfo myGroup) {
         int scheduledAt = world.getTickIndex();
         delayedMoves.add(move -> {
+            ArrayList<VehicleGroupInfo> groups = new ArrayList<>();
+            groups.add(myGroup);
+            refreshGroups(groups);
+
+            if (groups.isEmpty()) {
+                log(WARN + "group " + myGroup + " is destroyed");
+                return;
+            }
+
             log("executed potential move with delay " + (world.getTickIndex() - scheduledAt));
 
             myGroup.potentialMap = calcMap(myGroup);
