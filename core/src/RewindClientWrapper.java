@@ -108,7 +108,7 @@ public class RewindClientWrapper implements MyStrategyPainter {
                 }
 
 
-                if (!didDrawPP && myGroup.vehicleType == VehicleType.IFV) {
+                if (!didDrawPP && myGroup.vehicleType != VehicleType.HELICOPTER && myGroup.vehicleType != VehicleType.FIGHTER) {
                     drawPP(myGroup);
                 }
             }
@@ -160,7 +160,7 @@ public class RewindClientWrapper implements MyStrategyPainter {
                 int alpha = (int) (((Math.pow(root, v)) / delta) * 220);
                 //int alpha = (int) ((v / delta) * 220);
                 if (alpha > 0) {
-                    rc.rect(x * cellSize, y * cellSize, x * cellSize + cellSize, y * cellSize + cellSize, new Color(133, alpha, 255 - alpha, 200), 1);
+                    rc.rect(x * cellSize, y * cellSize, x * cellSize + cellSize, y * cellSize + cellSize, new Color(133, alpha, 255 - alpha, 100), 1);
                 }
             }
         }

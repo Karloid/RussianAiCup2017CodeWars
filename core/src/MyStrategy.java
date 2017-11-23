@@ -140,7 +140,7 @@ public final class MyStrategy implements Strategy {
             if (initialScale(myGroup)) continue;
             
 
-            if (myGroup.vehicleType == FIGHTER || myGroup.vehicleType == HELICOPTER || myGroup.vehicleType == IFV) {
+            if (myGroup.vehicleType == FIGHTER || myGroup.vehicleType == HELICOPTER || myGroup.vehicleType == IFV || myGroup.vehicleType == TANK) {
 
                 myGroup.potentialMap = calcMap(myGroup);
                 myGroup.potentialMapCalcAt = world.getTickIndex();
@@ -161,7 +161,7 @@ public final class MyStrategy implements Strategy {
                             continue;
                         }
                         Point2D currentChoice = new Point2D(x, y);
-                        if (currentChoice.getDistanceTo(myX, myY) > half) {
+                        if (Math.ceil(currentChoice.getDistanceTo(myX, myY)) > half + 0.01) {
                             continue;
                         }
 
@@ -331,7 +331,7 @@ public final class MyStrategy implements Strategy {
                 addToArray(plainArray, enemyIfv, range, .4f);
                 addToArray(plainArray, enemyTank, range, .1f);
 
-                subFromArray(plainArray, enemyIfv, (game.getIfvGroundAttackRange() + 20) / cellSize, .5f);
+                subFromArray(plainArray, enemyIfv, (game.getIfvGroundAttackRange() + 20) / cellSize, .3f);
                 subFromArray(plainArray, enemyTank, (game.getTankGroundAttackRange() * 4.5) / cellSize, 3.2f);
             }
 
@@ -348,6 +348,47 @@ public final class MyStrategy implements Strategy {
 
                 if (!myFighters.isEmpty()) {
                     subFromArray(plainArray, myFighters, range, factor);
+                }
+            }
+        }
+
+        if (vehicleGroupInfo.vehicleType == TANK) {
+            {
+
+                double range = plainArray.cellsWidth * 1.2;
+
+                //addToArray(plainArray, tanksAndArrvSet, range, 1.f);
+                //targets
+                addToArray(plainArray, getUnitsCount(true).get(IFV).entrySet(), range, 1.f);
+                addToArray(plainArray, getUnitsCount(true).get(TANK).entrySet(), range, .9f);
+                addToArray(plainArray, getUnitsCount(true).get(ARRV).entrySet(), range, 0.8f);
+
+
+                //secondary targets
+                Set<Map.Entry<Point2D, Integer>> helics = getUnitsCount(true).get(HELICOPTER).entrySet();
+                Set<Map.Entry<Point2D, Integer>> fighters = getUnitsCount(true).get(FIGHTER).entrySet();
+
+                addToArray(plainArray, helics, range, .1f);
+                addToArray(plainArray, getUnitsCount(true).get(FIGHTER).entrySet(), range, .4f);
+
+                //keep away from secondary targets
+                subFromArray(plainArray, helics, (game.getHelicopterGroundAttackRange() * 3) / cellSize, 4.5f);
+                subFromArray(plainArray, fighters, (GROUP_SIZE) / cellSize, .1f);
+            }
+
+            {   // my units as obstacle
+                HashMap<Point2D, Integer> myGroundUnits = new HashMap<>(getUnitsCount(false).get(IFV));
+
+                myGroundUnits.putAll(getUnitsCount(false).get(ARRV));
+
+                Set<Map.Entry<Point2D, Integer>> myGroundUnits2 = myGroundUnits.entrySet();
+
+                double range = (GROUP_SIZE * 1.5) / cellSize;
+
+                int factor = 2;
+
+                if (!myGroundUnits2.isEmpty()) {
+                    subFromArray(plainArray, myGroundUnits2, range, factor);
                 }
             }
         }
@@ -390,7 +431,7 @@ public final class MyStrategy implements Strategy {
         if (enemyUnitsCount == null) {
             enemyUnitsCount = new HashMap<>();
             myUnitsCount = new HashMap<>();
-            for (VehicleType vehicleType : VehicleType.values()) {
+            for (VehicleType vehicleType : VehicleType.values()) {   //TODO respect heals, respect movement
                 enemyUnitsCount.put(vehicleType, new HashMap<>());
                 myUnitsCount.put(vehicleType, new HashMap<>());
             }
