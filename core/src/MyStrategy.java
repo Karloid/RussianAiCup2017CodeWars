@@ -281,7 +281,7 @@ public final class MyStrategy implements Strategy {
                 double range = plainArray.cellsWidth * 1.2;
 
                 //addToArray(plainArray, tanksAndArrvSet, range, 1.f);
-                addToArray(plainArray, getUnitsCount(true).get(TANK).entrySet(), range, .8f);
+                addToArray(plainArray, getUnitsCount(true).get(TANK).entrySet(), range, 1.f);
                 addToArray(plainArray, getUnitsCount(true).get(ARRV).entrySet(), range, 1.f);
 
 
@@ -383,7 +383,7 @@ public final class MyStrategy implements Strategy {
 
                 //keep away from secondary targets
                 subFromArray(plainArray, helics, (game.getHelicopterGroundAttackRange() * 3) / cellSize, 4.5f);
-                subFromArray(plainArray, fighters, (GROUP_SIZE) / cellSize, .1f);
+                subFromArray(plainArray, fighters, (GROUP_SIZE) / cellSize, .4f);
             }
 
             {   // my units as obstacle
@@ -925,7 +925,7 @@ public final class MyStrategy implements Strategy {
     private boolean tryPickNuclearTarget() {
         if (me.getRemainingNuclearStrikeCooldownTicks() == 0 && scheduledStrike == null) {
             int remainingHp = um.enemyStats.remainingHp;
-            int minNuclearDmg = (int) Math.min(MyStrategy.MIN_NUCLEAR_DMG, remainingHp * 0.7);
+            int minNuclearDmg = (int) Math.min(MyStrategy.MIN_NUCLEAR_DMG, remainingHp * 0.6);
 
 
             NuclearStrike max = NuclearStrike.getMaxDmg(this);
