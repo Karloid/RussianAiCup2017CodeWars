@@ -106,7 +106,7 @@ public class RewindClientWrapper implements MyStrategyPainter {
                 }
 
 
-                if (myGroup.vehicleType == VehicleType.FIGHTER) {
+                if (myGroup.vehicleType == VehicleType.HELICOPTER) {
                     drawPP(myGroup);
                 }
             }
@@ -132,7 +132,7 @@ public class RewindClientWrapper implements MyStrategyPainter {
 
         PlainArray plainArray = myGroup.potentialMap;
 
-        if (myGroup.potentialMap == null) {
+        if (myGroup.potentialMap == null || mys.world.getTickIndex() - myGroup.potentialMapCalcAt  > 5) {
             return;
         }
 

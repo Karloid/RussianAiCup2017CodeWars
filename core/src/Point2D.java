@@ -216,4 +216,12 @@ public final class Point2D {
     public Point2D div(double f) {
         return new Point2D(x / f, y / f);
     }
+
+    public double getVal() {
+        return val;
+    }
+
+    public void setVal(double val) {
+        this.val = val;
+    }
 }

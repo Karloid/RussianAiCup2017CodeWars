@@ -22,7 +22,7 @@ public class PlainArray {
 
     double get(int x, int y) {
         if (!inBounds(x, y)) {
-            return 0;
+            return -9999;
         }
         return array[y * cellsWidth + x];
     }

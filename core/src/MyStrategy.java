@@ -138,9 +138,39 @@ public final class MyStrategy implements Strategy {
             }
 
 
-            if (myGroup.vehicleType == FIGHTER) {
+            if (myGroup.vehicleType == FIGHTER || myGroup.vehicleType == HELICOPTER) {
 
                 myGroup.potentialMap = calcMap(myGroup);
+                myGroup.potentialMapCalcAt = world.getTickIndex();
+
+
+                Point2D averagePoint = myGroup.getAveragePoint();
+
+                averagePoint = averagePoint.div(cellSize);
+
+                int myX = averagePoint.getIntX();
+                int myY = averagePoint.getIntY();
+
+                Point2D bestChoice = null;
+                int half = 9 / 2;
+                for (int x = myX - half; x <= myX + half; x++) {
+                    for (int y = myY - half; y <= myY + half; y++) {
+                        if (y == myY && x == myX) {
+                            continue;
+                        }
+                        Point2D currentChoice = new Point2D(x, y);
+                        currentChoice.setVal(myGroup.potentialMap.get(x, y));
+                        if (bestChoice == null || bestChoice.getVal() < currentChoice.getVal()) {
+                            //TODO check safety
+                            bestChoice = currentChoice;
+                        }
+                    }
+                }
+
+                if (bestChoice != null) {
+                    scheduleSelectAll(myGroup);
+                    scheduleMoveToPoint(myGroup, bestChoice.mul(cellSize).add(cellSize / 2, cellSize / 2));
+                }
 
             }
         }
@@ -149,9 +179,9 @@ public final class MyStrategy implements Strategy {
     private PlainArray calcMap(VehicleGroupInfo vehicleGroupInfo) {
         PlainArray plainArray = new PlainArray((int) game.getWorldWidth() / cellSize, (int) game.getWorldHeight() / cellSize);
 
-
+        Map<Point2D, Integer> fighterAndHelics = new HashMap<>(getUnitsCount(true).get(FIGHTER));
         {
-            Map<Point2D, Integer> fighterAndHelics = getUnitsCount(true).get(FIGHTER);
+
             Map<Point2D, Integer> helics = getUnitsCount(true).get(HELICOPTER);
 
             for (Map.Entry<Point2D, Integer> entry : helics.entrySet()) {
@@ -190,7 +220,31 @@ public final class MyStrategy implements Strategy {
         }
 
         {
-            Set<Map.Entry<Point2D, Integer>> myHelic = getUnitsCount(false).get(HELICOPTER).entrySet();
+            HashMap<Point2D, Integer> myHelicsMap = new HashMap<>(getUnitsCount(false).get(HELICOPTER));
+            for (Map.Entry<Point2D, Integer> entry : myHelicsMap.entrySet()) {
+
+                Point2D center = entry.getKey();
+
+                int half = 3;
+                boolean intruders = false;
+                for (int x = center.getIntX() - half; x <= center.getIntX() + half; x++) {
+                    for (int y = center.getIntY() - half; y <= center.getIntY() + half; y++) {
+                        Integer fighterOrHelicsCount = fighterAndHelics.get(new Point2D(x, y));
+                        if (fighterOrHelicsCount != null && fighterOrHelicsCount > 0) {
+                            intruders = true;
+                            //entry.setValue(0)
+                            break;
+                        }
+                    }
+                }
+
+                if (intruders) {
+                    myHelicsMap.clear();
+                    break;
+                }
+            }
+
+            Set<Map.Entry<Point2D, Integer>> myHelic = myHelicsMap.entrySet();
 
             double range = (GROUP_SIZE * 2) / cellSize;
 
@@ -199,9 +253,9 @@ public final class MyStrategy implements Strategy {
             if (!myHelic.isEmpty()) {
                 subFromArray(plainArray, myHelic, range, factor);
             }
+
+
         }
-
-
         return plainArray;
     }
 

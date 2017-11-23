@@ -17,6 +17,7 @@ public class VehicleGroupInfo {
     public boolean shouldHeal;
     public int groupNumber;
     public PlainArray potentialMap;
+    public int potentialMapCalcAt;
 
     public VehicleGroupInfo(Ownership ownership, VehicleType vehicleType, MyStrategy myStrategy) {
         this.ownership = ownership;
