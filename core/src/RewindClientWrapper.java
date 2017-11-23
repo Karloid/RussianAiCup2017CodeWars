@@ -145,18 +145,24 @@ public class RewindClientWrapper implements MyStrategyPainter {
                 delta = 1;
             }
 
+            double root = root(delta, delta);
+
             for (int x = 0; x < cellsX; x++) {
                 for (int y = 0; y < cellsY; y++) {
-                    double v = plainArray.get(x, y);
+                    double v = plainArray.get(x, y) - min;
 
-                    int alpha =  (int) (((v - min) / delta) * 220);
-                    if (alpha > 0) {
+                    int alpha = (int) (((Math.pow(root, v)) / delta) * 220);
+                    if (alpha > 110) {
                         rc.rect(x * cellSize, y * cellSize, x * cellSize + cellSize, y * cellSize + cellSize, new Color(200, 255, 0, alpha), 1);
-                    }
+                    } else if (alpha > 0) {
+                        rc.rect(x * cellSize, y * cellSize, x * cellSize + cellSize, y * cellSize + cellSize, new Color(0, 10, 255, 226 -alpha), 1);
+                    } else
+                        rc.rect(x * cellSize, y * cellSize, x * cellSize + cellSize, y * cellSize + cellSize, new Color(244, 11, 0, 100), 1);
                 }
             }
 
         }
+
     }
 
     private void drawMoveActual() {
@@ -206,6 +212,10 @@ public class RewindClientWrapper implements MyStrategyPainter {
                 }
                 break;
         }
+    }
+
+    public static double root(double num, double root) {
+        return Math.pow(Math.E, Math.log(num) / root);
     }
 
     @Override

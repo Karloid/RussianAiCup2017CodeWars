@@ -55,7 +55,7 @@ public final class MyStrategy implements Strategy {
     private int groupNextIndex = 1;
 
 
-    public int cellSize = 32;
+    public int cellSize = 16;
     public int worldWidth;
     public int worldHeight;
 
@@ -153,12 +153,28 @@ public final class MyStrategy implements Strategy {
             return plainArray;
         }
 
+        Map<Point2D, Integer> countMap = new HashMap<>();
         for (VehicleWrapper vehicle : eg.vehicles) {
-            plainArray.add(vehicle.getCellX(cellSize), vehicle.getCellY(cellSize), 1);
+            Point2D key = new Point2D(vehicle.getCellX(cellSize), vehicle.getCellY(cellSize));
+            countMap.put(key, countMap.getOrDefault(key, 0) + 1);
+            //plainArray.add(vehicle.getCellX(cellSize), vehicle.getCellY(cellSize), 1);
 
-            PlainArray countArray = plainArray;
+           /* PlainArray countArray = plainArray;
+            plainArray = new PlainArray(countArray.cellsWidth, countArray.cellsHeight);*/
+        }
 
-            plainArray = new PlainArray(countArray.cellsWidth, countArray.cellsHeight);
+        Set<Map.Entry<Point2D, Integer>> entries = countMap.entrySet();
+
+        double squareDelta = plainArray.cellsWidth * plainArray.cellsWidth * 1.4;
+        for (int x = 0; x < plainArray.cellsWidth; x++) {
+            for (int y = 0; y < plainArray.cellsHeight; y++) {
+
+                for (Map.Entry<Point2D, Integer> entry : entries) {
+                    Integer val = 100 - entry.getValue();
+                    double value = (1 - entry.getKey().squareDistance(x, y) / squareDelta) * val;
+                    plainArray.set(x, y, Math.max(plainArray.get(x, y), value));
+                }
+            }
         }
 
         return plainArray;

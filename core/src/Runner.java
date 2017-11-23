@@ -18,7 +18,7 @@ public final class Runner {
         if (hasArgs) {
            // runProc(null, false, "./rewindviewer");
             try {
-                Thread.sleep(2000);
+                Thread.sleep(2300);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
