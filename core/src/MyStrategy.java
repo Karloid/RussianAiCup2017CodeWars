@@ -138,7 +138,7 @@ public final class MyStrategy implements Strategy {
             }
 
 
-            if (myGroup.vehicleType == FIGHTER || myGroup.vehicleType == HELICOPTER) {
+            if (myGroup.vehicleType == FIGHTER /*|| myGroup.vehicleType == HELICOPTER*/) {
 
                 myGroup.potentialMap = calcMap(myGroup);
                 myGroup.potentialMapCalcAt = world.getTickIndex();
