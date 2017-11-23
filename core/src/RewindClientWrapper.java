@@ -108,7 +108,7 @@ public class RewindClientWrapper implements MyStrategyPainter {
                 }
 
 
-                if (!didDrawPP && myGroup.vehicleType != VehicleType.HELICOPTER && myGroup.vehicleType != VehicleType.FIGHTER) {
+                if (!didDrawPP) {
                     drawPP(myGroup);
                 }
             }

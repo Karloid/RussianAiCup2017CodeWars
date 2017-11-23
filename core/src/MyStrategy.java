@@ -138,9 +138,9 @@ public final class MyStrategy implements Strategy {
             }
 
             if (initialScale(myGroup)) continue;
-            
 
-            if (myGroup.vehicleType == FIGHTER || myGroup.vehicleType == HELICOPTER || myGroup.vehicleType == IFV || myGroup.vehicleType == TANK) {
+
+            if (true) {
 
                 myGroup.potentialMap = calcMap(myGroup);
                 myGroup.potentialMapCalcAt = world.getTickIndex();
@@ -183,6 +183,14 @@ public final class MyStrategy implements Strategy {
 
     private PlainArray calcMap(VehicleGroupInfo vehicleGroupInfo) {
         PlainArray plainArray = new PlainArray((int) game.getWorldWidth() / cellSize, (int) game.getWorldHeight() / cellSize);
+
+
+        refreshShouldHeal(myGroups);
+
+        boolean ifvShouldHeal = shouldHeal(IFV);
+        boolean tankShouldHeal = shouldHeal(TANK);
+        boolean heliShouldHeal = shouldHeal(HELICOPTER);
+        boolean fighterShouldHeal = shouldHeal(FIGHTER);
 
 
         if (vehicleGroupInfo.vehicleType == FIGHTER) {
@@ -256,7 +264,7 @@ public final class MyStrategy implements Strategy {
 
                 Set<Map.Entry<Point2D, Integer>> myHelic = myHelicsMap.entrySet();
 
-                double range = (GROUP_SIZE * 2) / cellSize;
+                double range = (GROUP_SIZE * 1.8) / cellSize;
 
                 int factor = 6;
 
@@ -338,11 +346,13 @@ public final class MyStrategy implements Strategy {
             {
                 HashMap<Point2D, Integer> myGroundUnits = new HashMap<>(getUnitsCount(false).get(TANK));
 
-                myGroundUnits.putAll(getUnitsCount(false).get(ARRV));
+                if (ifvShouldHeal) {
+                    myGroundUnits.putAll(getUnitsCount(false).get(ARRV));
+                }
 
                 Set<Map.Entry<Point2D, Integer>> myFighters = myGroundUnits.entrySet();
 
-                double range = (GROUP_SIZE * 1.5) / cellSize;
+                double range = (GROUP_SIZE * 1.3) / cellSize;
 
                 int factor = 2;
 
@@ -379,11 +389,79 @@ public final class MyStrategy implements Strategy {
             {   // my units as obstacle
                 HashMap<Point2D, Integer> myGroundUnits = new HashMap<>(getUnitsCount(false).get(IFV));
 
-                myGroundUnits.putAll(getUnitsCount(false).get(ARRV));
+                if (!tankShouldHeal) {
+                    myGroundUnits.putAll(getUnitsCount(false).get(ARRV));
+                }
 
                 Set<Map.Entry<Point2D, Integer>> myGroundUnits2 = myGroundUnits.entrySet();
 
-                double range = (GROUP_SIZE * 1.5) / cellSize;
+                double range = (GROUP_SIZE * 1.3) / cellSize;
+
+                int factor = 2;
+
+                if (!myGroundUnits2.isEmpty()) {
+                    subFromArray(plainArray, myGroundUnits2, range, factor);
+                }
+            }
+        }
+
+        if (vehicleGroupInfo.vehicleType == ARRV) {
+
+            {
+
+                double range = plainArray.cellsWidth * 1.2;
+
+                //addToArray(plainArray, tanksAndArrvSet, range, 1.f);
+                //targets
+                if (ifvShouldHeal) {
+                    addToArray(plainArray, getUnitsCount(false).get(IFV).entrySet(), range, 1.f);
+                }
+                if (tankShouldHeal) {
+                    addToArray(plainArray, getUnitsCount(false).get(TANK).entrySet(), range, 1f);
+                }
+              /*  addToArray(plainArray, getUnitsCount(false).get(FIGHTER).entrySet(), range, 0.8f);
+                addToArray(plainArray, getUnitsCount(false).get(HELICOPTER).entrySet(), range, 0.8f);*/
+
+
+                //secondary targets
+                Set<Map.Entry<Point2D, Integer>> helics = getUnitsCount(false).get(HELICOPTER).entrySet();
+                Set<Map.Entry<Point2D, Integer>> fighters = getUnitsCount(false).get(FIGHTER).entrySet();
+                Set<Map.Entry<Point2D, Integer>> tanks = getUnitsCount(false).get(TANK).entrySet();
+                Set<Map.Entry<Point2D, Integer>> ifvs = getUnitsCount(false).get(IFV).entrySet();
+
+                addToArray(plainArray, helics, range, .2f);
+                addToArray(plainArray, fighters, range, .2f);
+                addToArray(plainArray, tanks, range, .3f);
+                addToArray(plainArray, ifvs, range, .3f);
+
+                //TODO chase enemies
+
+                //keep away from secondary targets
+                Set<Map.Entry<Point2D, Integer>> enHel = getUnitsCount(true).get(HELICOPTER).entrySet();
+                Set<Map.Entry<Point2D, Integer>> enTanks = getUnitsCount(true).get(TANK).entrySet();
+                Set<Map.Entry<Point2D, Integer>> enIfv = getUnitsCount(true).get(IFV).entrySet();
+                subFromArray(plainArray, enHel, (game.getHelicopterGroundAttackRange() * 3) / cellSize, 1.5f);
+                subFromArray(plainArray, enTanks, (game.getTankGroundAttackRange() * 3) / cellSize, 1.5f);
+                subFromArray(plainArray, enIfv, (game.getIfvGroundAttackRange() * 3) / cellSize, 1.5f);
+            }
+
+            {   // my units as obstacle
+                HashMap<Point2D, Integer> grounUnits = new HashMap<>();
+
+                if (!tankShouldHeal) {
+                    grounUnits.putAll(getUnitsCount(false).get(TANK));
+                }
+                if (!ifvShouldHeal) {
+                    grounUnits.putAll(getUnitsCount(false).get(IFV));
+                }
+
+                grounUnits.putAll(getUnitsCount(true).get(TANK));
+                grounUnits.putAll(getUnitsCount(true).get(IFV));
+                grounUnits.putAll(getUnitsCount(true).get(ARRV));
+
+                Set<Map.Entry<Point2D, Integer>> myGroundUnits2 = grounUnits.entrySet();
+
+                double range = (GROUP_SIZE * 1.3) / cellSize;
 
                 int factor = 2;
 
@@ -395,6 +473,25 @@ public final class MyStrategy implements Strategy {
 
 
         return plainArray;
+    }
+
+    private boolean shouldHeal(VehicleType ifv) {
+        VehicleGroupInfo ifvGroup = findGroup(myGroups, ifv);
+        return ifvGroup != null && ifvGroup.shouldHeal;
+    }
+
+    private void refreshShouldHeal(List<VehicleGroupInfo> groups) {
+        for (VehicleGroupInfo group : groups) {
+            if (group.vehicleType != ARRV) {
+                continue;
+            }
+            double currentHpPercent = group.getHpPercent();
+            if (currentHpPercent < SHOULD_HEAL_TRESHOLD) {
+                group.shouldHeal = true;
+            } else if (currentHpPercent > 0.95) {
+                group.shouldHeal = false;
+            }
+        }
     }
 
     private void addToArray(PlainArray plainArray, Set<Map.Entry<Point2D, Integer>> counts, double range, float factor) {
