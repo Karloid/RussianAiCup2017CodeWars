@@ -138,7 +138,7 @@ public final class MyStrategy implements Strategy {
             }
 
 
-            if (myGroup.vehicleType == FIGHTER || myGroup.vehicleType == HELICOPTER) {
+            if (myGroup.vehicleType == FIGHTER || myGroup.vehicleType == HELICOPTER || myGroup.vehicleType == IFV) {
 
                 myGroup.potentialMap = calcMap(myGroup);
                 myGroup.potentialMapCalcAt = world.getTickIndex();
@@ -152,13 +152,17 @@ public final class MyStrategy implements Strategy {
                 int myY = averagePoint.getIntY();
 
                 Point2D bestChoice = null;
-                int half = 9 / 2;
+                int half = 11 / 2;
                 for (int x = myX - half; x <= myX + half; x++) {
                     for (int y = myY - half; y <= myY + half; y++) {
                         if (y == myY && x == myX) {
                             continue;
                         }
                         Point2D currentChoice = new Point2D(x, y);
+                        if (currentChoice.getDistanceTo(myX, myY) > half) {
+                            continue;
+                        }
+
                         currentChoice.setVal(myGroup.potentialMap.get(x, y));
                         if (bestChoice == null || bestChoice.getVal() < currentChoice.getVal()) {
                             //TODO check safety
@@ -261,18 +265,8 @@ public final class MyStrategy implements Strategy {
         }
 
         if (vehicleGroupInfo.vehicleType == HELICOPTER) {
-            Map<Point2D, Integer> tanksAndArrv = new HashMap<>(getUnitsCount(true).get(TANK));
+
             {
-
-                Map<Point2D, Integer> arrvs = getUnitsCount(true).get(ARRV);
-
-                for (Map.Entry<Point2D, Integer> entry : arrvs.entrySet()) {
-                    tanksAndArrv.put(entry.getKey(), tanksAndArrv.getOrDefault(entry.getValue(), 0) + entry.getValue()); //TODO tune
-                }
-
-
-                Set<Map.Entry<Point2D, Integer>> tanksAndArrvSet = tanksAndArrv.entrySet();
-
 
                 double range = plainArray.cellsWidth * 1.2;
 
@@ -286,51 +280,67 @@ public final class MyStrategy implements Strategy {
                 addToArray(plainArray, enemyIfv, range, .1f); //TODO FEAR
                 addToArray(plainArray, enemyHelics, range, .3f);
 
-                subFromArray(plainArray, enemyIfv, (game.getHelicopterAerialAttackRange() + 10) / cellSize, 2.2f);
+                subFromArray(plainArray, enemyIfv, (game.getHelicopterAerialAttackRange() + 30) / cellSize, 3.2f);
                 subFromArray(plainArray, enemyHelics, (game.getIfvAerialAttackRange() + 10) / cellSize, 1.4f);
             }
 
 
             {
-                Set<Map.Entry<Point2D, Integer>> ifvCount = getUnitsCount(true).get(FIGHTER).entrySet();
+                Set<Map.Entry<Point2D, Integer>> fighters = getUnitsCount(true).get(FIGHTER).entrySet();
 
                 double range = (game.getFighterAerialAttackRange() * 2.8) / cellSize;
 
                 int factor = 6;
 
-                if (!ifvCount.isEmpty()) {
-                    subFromArray(plainArray, ifvCount, range, factor);
+                if (!fighters.isEmpty()) {
+                    subFromArray(plainArray, fighters, range, factor);
                 }
             }
 
             {
                 HashMap<Point2D, Integer> myFightersMap = new HashMap<>(getUnitsCount(false).get(FIGHTER));
-               /* for (Map.Entry<Point2D, Integer> entry : myFightersMap.entrySet()) {
-
-                    Point2D center = entry.getKey();
-
-                    int half = 3;
-                    boolean intruders = false;
-                    for (int x = center.getIntX() - half; x <= center.getIntX() + half; x++) {
-                        for (int y = center.getIntY() - half; y <= center.getIntY() + half; y++) {
-                            Integer fighterOrHelicsCount = tanksAndArrv.get(new Point2D(x, y));
-                            if (fighterOrHelicsCount != null && fighterOrHelicsCount > 0) {
-                                intruders = true;
-                                //entry.setValue(0)
-                                break;
-                            }
-                        }
-                    }
-
-                    if (intruders) {
-                        myFightersMap.clear();
-                        break;
-                    }
-                }*/
 
                 Set<Map.Entry<Point2D, Integer>> myFighters = myFightersMap.entrySet();
 
                 double range = (GROUP_SIZE) / cellSize;
+
+                int factor = 2;
+
+                if (!myFighters.isEmpty()) {
+                    subFromArray(plainArray, myFighters, range, factor);
+                }
+            }
+        }
+
+        if (vehicleGroupInfo.vehicleType == IFV) {
+            {
+
+                double range = plainArray.cellsWidth * 1.2;
+
+                //addToArray(plainArray, tanksAndArrvSet, range, 1.f);
+                addToArray(plainArray, getUnitsCount(true).get(HELICOPTER).entrySet(), range, .9f);
+                addToArray(plainArray, getUnitsCount(true).get(FIGHTER).entrySet(), range, 1.f);
+                addToArray(plainArray, getUnitsCount(true).get(ARRV).entrySet(), range, 0.75f);
+
+
+                Set<Map.Entry<Point2D, Integer>> enemyTank = getUnitsCount(true).get(TANK).entrySet();
+                Set<Map.Entry<Point2D, Integer>> enemyIfv = getUnitsCount(true).get(IFV).entrySet();
+
+                addToArray(plainArray, enemyIfv, range, .4f);
+                addToArray(plainArray, enemyTank, range, .1f);
+
+                subFromArray(plainArray, enemyIfv, (game.getIfvGroundAttackRange() + 20) / cellSize, .5f);
+                subFromArray(plainArray, enemyTank, (game.getTankGroundAttackRange() * 4.5) / cellSize, 3.2f);
+            }
+
+            {
+                HashMap<Point2D, Integer> myGroundUnits = new HashMap<>(getUnitsCount(false).get(TANK));
+
+                myGroundUnits.putAll(getUnitsCount(false).get(ARRV));
+
+                Set<Map.Entry<Point2D, Integer>> myFighters = myGroundUnits.entrySet();
+
+                double range = (GROUP_SIZE * 1.5) / cellSize;
 
                 int factor = 2;
 
