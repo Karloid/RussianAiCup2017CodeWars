@@ -162,6 +162,8 @@ public class RewindClientWrapper implements MyStrategyPainter {
             }
         }
 
+        rc.message(String.format("\\nMap Draw: min %.2f max %.2f delta %.2f", min, max, delta));
+
 
     }
 
