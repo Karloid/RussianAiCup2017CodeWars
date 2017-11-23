@@ -267,7 +267,9 @@ public final class MyStrategy implements Strategy {
 
                 double range = plainArray.cellsWidth * 1.2;
 
-                addToArray(plainArray, tanksAndArrvSet, range, 1.f);
+                //addToArray(plainArray, tanksAndArrvSet, range, 1.f);
+                addToArray(plainArray, getUnitsCount(true).get(TANK).entrySet(), range, .8f);
+                addToArray(plainArray, getUnitsCount(true).get(ARRV).entrySet(), range, 1.f);
 
 
                 Set<Map.Entry<Point2D, Integer>> enemyHelics = getUnitsCount(true).get(HELICOPTER).entrySet();
