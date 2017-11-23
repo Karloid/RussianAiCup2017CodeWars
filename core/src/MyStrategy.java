@@ -198,7 +198,16 @@ public final class MyStrategy implements Strategy {
 
                 addToArray(plainArray, figAndHelicsSet, range, 1.f);
 
-                //TODO other groups
+
+                Set<Map.Entry<Point2D, Integer>> enemyTanks = getUnitsCount(true).get(TANK).entrySet();
+                Set<Map.Entry<Point2D, Integer>> enemyArrvs = getUnitsCount(true).get(ARRV).entrySet();
+                Set<Map.Entry<Point2D, Integer>> enemyIfv = getUnitsCount(true).get(IFV).entrySet();
+                addToArray(plainArray, enemyIfv, range, .1f);
+                addToArray(plainArray, enemyTanks, range, .1f);
+                addToArray(plainArray, enemyArrvs, range, .1f);
+
+                subFromArray(plainArray, enemyTanks, (game.getIfvAerialAttackRange() + 10) / cellSize, 1.4f);
+                subFromArray(plainArray, enemyArrvs, (game.getIfvAerialAttackRange() + 10) / cellSize, 1.4f);
             }
 
 
@@ -277,7 +286,7 @@ public final class MyStrategy implements Strategy {
                 addToArray(plainArray, enemyIfv, range, .1f); //TODO FEAR
                 addToArray(plainArray, enemyHelics, range, .3f);
 
-                subFromArray(plainArray, enemyIfv, (game.getHelicopterAerialAttackRange() + 10) / cellSize, 1.2f);
+                subFromArray(plainArray, enemyIfv, (game.getHelicopterAerialAttackRange() + 10) / cellSize, 2.2f);
                 subFromArray(plainArray, enemyHelics, (game.getIfvAerialAttackRange() + 10) / cellSize, 1.4f);
             }
 

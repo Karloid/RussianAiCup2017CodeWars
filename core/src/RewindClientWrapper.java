@@ -16,6 +16,7 @@ public class RewindClientWrapper implements MyStrategyPainter {
     public static final int LAYER_GENERIC = 4;
     private MyStrategy mys;
     private RewindClient rc;
+    private boolean didDrawPP;
 
     public RewindClientWrapper() {
     }
@@ -93,6 +94,7 @@ public class RewindClientWrapper implements MyStrategyPainter {
     @Override
     public void onEndTick() {
         java.util.List<VehicleGroupInfo> myGroups = mys.myGroups;
+        didDrawPP = false;
         if (myGroups != null) {
             for (int i = 0; i < myGroups.size(); i++) {
                 VehicleGroupInfo myGroup = myGroups.get(i);
@@ -106,7 +108,7 @@ public class RewindClientWrapper implements MyStrategyPainter {
                 }
 
 
-                if (myGroup.vehicleType == VehicleType.HELICOPTER) {
+                if (!didDrawPP) {
                     drawPP(myGroup);
                 }
             }
@@ -132,9 +134,10 @@ public class RewindClientWrapper implements MyStrategyPainter {
 
         PlainArray plainArray = myGroup.potentialMap;
 
-        if (myGroup.potentialMap == null || mys.world.getTickIndex() - myGroup.potentialMapCalcAt  > 5) {
+        if (myGroup.potentialMap == null || mys.world.getTickIndex() - myGroup.potentialMapCalcAt > 5) {
             return;
         }
+        didDrawPP = true;
 
         int cellSize = mys.cellSize;
 
@@ -162,7 +165,7 @@ public class RewindClientWrapper implements MyStrategyPainter {
             }
         }
 
-        rc.message(String.format("\\nMap Draw: min %.2f max %.2f delta %.2f", min, max, delta));
+        rc.message(String.format("\\n%s\\nMap Draw: min %.2f max %.2f \\ndelta %.2f", myGroup.vehicleType, min, max, delta));
 
 
     }
