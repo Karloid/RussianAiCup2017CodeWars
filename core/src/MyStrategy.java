@@ -137,6 +137,8 @@ public final class MyStrategy implements Strategy {
                 continue;
             }
 
+            if (initialScale(myGroup)) continue;
+            
 
             if (myGroup.vehicleType == FIGHTER || myGroup.vehicleType == HELICOPTER || myGroup.vehicleType == IFV) {
 
@@ -582,17 +584,7 @@ public final class MyStrategy implements Strategy {
                 continue;
             }
 
-            if (!myGroup.isScaled) {
-                myGroup.isScaled = true;
-                scheduleSelectAll(myGroup);
-                delayedMoves.add(move1 -> {
-                    move1.setAction(ActionType.SCALE);
-                    move1.setX(myGroup.getAveragePoint().getX());
-                    move1.setY(myGroup.getAveragePoint().getY());
-                    move1.setFactor(0.3);
-                });
-                continue;
-            }
+            if (initialScale(myGroup)) continue;
 
             // scaleToKover(myGroup);
             if (isArrvMoving && (myGroup.vehicleType == IFV || myGroup.vehicleType == TANK)) {
@@ -740,6 +732,21 @@ public final class MyStrategy implements Strategy {
             }
         }
 
+    }
+
+    private boolean initialScale(VehicleGroupInfo myGroup) {
+        if (!myGroup.isScaled) {
+            myGroup.isScaled = true;
+            scheduleSelectAll(myGroup);
+            delayedMoves.add(move1 -> {
+                move1.setAction(ActionType.SCALE);
+                move1.setX(myGroup.getAveragePoint().getX());
+                move1.setY(myGroup.getAveragePoint().getY());
+                move1.setFactor(0.3);
+            });
+            return true;
+        }
+        return false;
     }
 
     private void tryEvadeNuclearTarget() {
