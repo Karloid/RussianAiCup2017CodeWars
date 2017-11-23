@@ -1094,7 +1094,9 @@ public final class MyStrategy implements Strategy {
     }
 
     private void scheduleMoveToPoint(VehicleGroupInfo myGroup, Point2D point) {
+        int scheduledAt = world.getTickIndex();
         delayedMoves.add(move -> {
+            log("executed move with delay " + (world.getTickIndex() - scheduledAt) );
             actualMoveToPoint(myGroup, point, move);
         });
     }
