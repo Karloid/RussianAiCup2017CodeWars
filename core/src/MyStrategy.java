@@ -55,9 +55,11 @@ public final class MyStrategy implements Strategy {
     private int groupNextIndex = 1;
 
 
-    public int cellSize = 16;
+    public int cellSize = 32;
     public int worldWidth;
     public int worldHeight;
+    private Map<VehicleType, Map<Point2D, Integer>> myUnitsCount;
+    private Map<VehicleType, Map<Point2D, Integer>> enemyUnitsCount;
 
 
     @Override
@@ -127,49 +129,44 @@ public final class MyStrategy implements Strategy {
 
         //TODO calc potentials
 
+        myUnitsCount = null;
+        enemyUnitsCount = null;
         for (VehicleGroupInfo myGroup : myGroups) {
 
+            if (myGroup.isMovingToPoint()) {
+                continue;
+            }
+
+
             if (myGroup.vehicleType == FIGHTER) {
-                myGroup.potentialMaps.put(FIGHTER, calcMap(myGroup.vehicleType, FIGHTER));
+
+                myGroup.potentialMap = calcMap(myGroup);
 
             }
         }
     }
 
-    private PlainArray calcMap(VehicleType myType, VehicleType enemyType) {
+    private PlainArray calcMap(VehicleGroupInfo vehicleGroupInfo) {
         PlainArray plainArray = new PlainArray((int) game.getWorldWidth() / cellSize, (int) game.getWorldHeight() / cellSize);
 
-        VehicleGroupInfo eg = null;
-        for (VehicleGroupInfo enemyGroup : enemyGroups) {
-            if (enemyGroup.vehicleType == enemyType) {
 
-                eg = enemyGroup;
+        Map<Point2D, Integer> fighterAndHelics = getUnitsCount(true).get(FIGHTER);
 
+        Map<Point2D, Integer> helics = getUnitsCount(true).get(HELICOPTER);
 
-                break;
-            }
-        }
-        if (eg == null) {
-            return plainArray;
+        for (Map.Entry<Point2D, Integer> entry : helics.entrySet()) {
+            fighterAndHelics.put(entry.getKey(), fighterAndHelics.getOrDefault(entry.getValue(), 0) + entry.getValue()); //TODO tune
         }
 
-        Map<Point2D, Integer> countMap = new HashMap<>();
-        for (VehicleWrapper vehicle : eg.vehicles) {
-            Point2D key = new Point2D(vehicle.getCellX(cellSize), vehicle.getCellY(cellSize));
-            countMap.put(key, countMap.getOrDefault(key, 0) + 1);
-            //plainArray.add(vehicle.getCellX(cellSize), vehicle.getCellY(cellSize), 1);
 
-           /* PlainArray countArray = plainArray;
-            plainArray = new PlainArray(countArray.cellsWidth, countArray.cellsHeight);*/
-        }
+        Set<Map.Entry<Point2D, Integer>> figAndHelicsSet = fighterAndHelics.entrySet();
 
-        Set<Map.Entry<Point2D, Integer>> entries = countMap.entrySet();
 
         double squareDelta = plainArray.cellsWidth * plainArray.cellsWidth * 1.4;
         for (int x = 0; x < plainArray.cellsWidth; x++) {
             for (int y = 0; y < plainArray.cellsHeight; y++) {
 
-                for (Map.Entry<Point2D, Integer> entry : entries) {
+                for (Map.Entry<Point2D, Integer> entry : figAndHelicsSet) {
                     Integer val = 100 - entry.getValue();
                     double value = (1 - entry.getKey().squareDistance(x, y) / squareDelta) * val;
                     plainArray.set(x, y, Math.max(plainArray.get(x, y), value));
@@ -177,7 +174,31 @@ public final class MyStrategy implements Strategy {
             }
         }
 
+
         return plainArray;
+    }
+
+    private Map<VehicleType, Map<Point2D, Integer>> getUnitsCount(boolean enemy) {
+        if (enemyUnitsCount == null) {
+            enemyUnitsCount = new HashMap<>();
+            myUnitsCount = new HashMap<>();
+            for (VehicleType vehicleType : VehicleType.values()) {
+                enemyUnitsCount.put(vehicleType, new HashMap<>());
+                myUnitsCount.put(vehicleType, new HashMap<>());
+            }
+
+
+            for (VehicleWrapper vehicle : um.vehicleById.values()) {
+                Point2D key = new Point2D(vehicle.getCellX(cellSize), vehicle.getCellY(cellSize));
+
+                Map<VehicleType, Map<Point2D, Integer>> map = vehicle.isEnemy ? enemyUnitsCount : myUnitsCount;
+                Map<Point2D, Integer> countMap = map.get(vehicle.v.getType());
+                countMap.put(key, countMap.getOrDefault(key, 0) + 1);
+            }
+        }
+
+
+        return enemy ? enemyUnitsCount : myUnitsCount;
     }
 
     private void printCurrentAction() {

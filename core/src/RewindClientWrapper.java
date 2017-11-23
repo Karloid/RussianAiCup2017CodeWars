@@ -129,39 +129,39 @@ public class RewindClientWrapper implements MyStrategyPainter {
     }
 
     private void drawPP(VehicleGroupInfo myGroup) {
-        for (Map.Entry<VehicleType, PlainArray> entry : myGroup.potentialMaps.entrySet()) {
 
-            PlainArray plainArray = entry.getValue();
+        PlainArray plainArray = myGroup.potentialMap;
 
-            int cellSize = mys.cellSize;
+        if (myGroup.potentialMap == null) {
+            return;
+        }
 
-            int cellsX = mys.worldWidth / cellSize;
-            int cellsY = mys.worldHeight / cellSize;
+        int cellSize = mys.cellSize;
 
-            double max = plainArray.getMax();
-            double min = plainArray.getMin();
-            double delta = max - min;
-            if (delta == 0) {
-                delta = 1;
-            }
+        int cellsX = mys.worldWidth / cellSize;
+        int cellsY = mys.worldHeight / cellSize;
 
-            double root = root(delta, delta);
+        double max = plainArray.getMax();
+        double min = plainArray.getMin();
+        double delta = max - min;
+        if (delta == 0) {
+            delta = 1;
+        }
 
-            for (int x = 0; x < cellsX; x++) {
-                for (int y = 0; y < cellsY; y++) {
-                    double v = plainArray.get(x, y) - min;
+        double root = root(delta, delta);
 
-                    int alpha = (int) (((Math.pow(root, v)) / delta) * 220);
-                    if (alpha > 110) {
-                        rc.rect(x * cellSize, y * cellSize, x * cellSize + cellSize, y * cellSize + cellSize, new Color(200, 255, 0, alpha), 1);
-                    } else if (alpha > 0) {
-                        rc.rect(x * cellSize, y * cellSize, x * cellSize + cellSize, y * cellSize + cellSize, new Color(0, 10, 255, 226 -alpha), 1);
-                    } else
-                        rc.rect(x * cellSize, y * cellSize, x * cellSize + cellSize, y * cellSize + cellSize, new Color(244, 11, 0, 100), 1);
+        for (int x = 0; x < cellsX; x++) {
+            for (int y = 0; y < cellsY; y++) {
+                double v = plainArray.get(x, y) - min;
+
+                int alpha = (int) (((Math.pow(root, v)) / delta) * 220);
+                //int alpha = (int) ((v / delta) * 220);
+                if (alpha > 0) {
+                    rc.rect(x * cellSize, y * cellSize, x * cellSize + cellSize, y * cellSize + cellSize, new Color(133, alpha, 255 - alpha, 200), 1);
                 }
             }
-
         }
+
 
     }
 
