@@ -138,7 +138,7 @@ public final class MyStrategy implements Strategy {
             }
 
 
-            if (myGroup.vehicleType == FIGHTER /*|| myGroup.vehicleType == HELICOPTER*/) {
+            if (myGroup.vehicleType == FIGHTER || myGroup.vehicleType == HELICOPTER) {
 
                 myGroup.potentialMap = calcMap(myGroup);
                 myGroup.potentialMapCalcAt = world.getTickIndex();
@@ -171,7 +171,6 @@ public final class MyStrategy implements Strategy {
                     scheduleSelectAll(myGroup);
                     scheduleMoveToPoint(myGroup, bestChoice.mul(cellSize).add(cellSize / 2, cellSize / 2));
                 }
-
             }
         }
     }
@@ -179,93 +178,182 @@ public final class MyStrategy implements Strategy {
     private PlainArray calcMap(VehicleGroupInfo vehicleGroupInfo) {
         PlainArray plainArray = new PlainArray((int) game.getWorldWidth() / cellSize, (int) game.getWorldHeight() / cellSize);
 
-        Map<Point2D, Integer> fighterAndHelics = new HashMap<>(getUnitsCount(true).get(FIGHTER));
-        {
 
-            Map<Point2D, Integer> helics = getUnitsCount(true).get(HELICOPTER);
+        if (vehicleGroupInfo.vehicleType == FIGHTER) {
 
-            for (Map.Entry<Point2D, Integer> entry : helics.entrySet()) {
-                fighterAndHelics.put(entry.getKey(), fighterAndHelics.getOrDefault(entry.getValue(), 0) + entry.getValue()); //TODO tune
+            Map<Point2D, Integer> fighterAndHelics = new HashMap<>(getUnitsCount(true).get(FIGHTER));
+            {
+
+                Map<Point2D, Integer> helics = getUnitsCount(true).get(HELICOPTER);
+
+                for (Map.Entry<Point2D, Integer> entry : helics.entrySet()) {
+                    fighterAndHelics.put(entry.getKey(), fighterAndHelics.getOrDefault(entry.getValue(), 0) + entry.getValue()); //TODO tune
+                }
+
+
+                Set<Map.Entry<Point2D, Integer>> figAndHelicsSet = fighterAndHelics.entrySet();
+
+
+                double range = plainArray.cellsWidth * 1.2;
+
+                addToArray(plainArray, figAndHelicsSet, range, 1.f);
+
+                //TODO other groups
             }
 
 
-            Set<Map.Entry<Point2D, Integer>> figAndHelicsSet = fighterAndHelics.entrySet();
+            {
+                Set<Map.Entry<Point2D, Integer>> ifvCount = getUnitsCount(true).get(IFV).entrySet();
 
+                double range = (game.getIfvAerialAttackRange() * 1.8) / cellSize;
 
-            double squareDelta = plainArray.cellsWidth * plainArray.cellsWidth * 1.4; //1.4 - hypot
-            for (int x = 0; x < plainArray.cellsWidth; x++) {
-                for (int y = 0; y < plainArray.cellsHeight; y++) {
+                int factor = 6;
 
-                    for (Map.Entry<Point2D, Integer> entry : figAndHelicsSet) {
-                        Integer val = 100 - entry.getValue();
-                        double value = (1 - entry.getKey().squareDistance(x, y) / squareDelta) * val;
-                        plainArray.set(x, y, Math.max(plainArray.get(x, y), value));
-                    }
+                if (!ifvCount.isEmpty()) {
+                    subFromArray(plainArray, ifvCount, range, factor);
                 }
             }
 
-        }
+            {
+                HashMap<Point2D, Integer> myHelicsMap = new HashMap<>(getUnitsCount(false).get(HELICOPTER));
+                for (Map.Entry<Point2D, Integer> entry : myHelicsMap.entrySet()) {
 
+                    Point2D center = entry.getKey();
 
-        {
-            Set<Map.Entry<Point2D, Integer>> ifvCount = getUnitsCount(true).get(IFV).entrySet();
-
-            double range = (game.getIfvAerialAttackRange() * 1.8) / cellSize;
-
-            int factor = 6;
-
-            if (!ifvCount.isEmpty()) {
-                subFromArray(plainArray, ifvCount, range, factor);
-            }
-        }
-
-        {
-            HashMap<Point2D, Integer> myHelicsMap = new HashMap<>(getUnitsCount(false).get(HELICOPTER));
-            for (Map.Entry<Point2D, Integer> entry : myHelicsMap.entrySet()) {
-
-                Point2D center = entry.getKey();
-
-                int half = 3;
-                boolean intruders = false;
-                for (int x = center.getIntX() - half; x <= center.getIntX() + half; x++) {
-                    for (int y = center.getIntY() - half; y <= center.getIntY() + half; y++) {
-                        Integer fighterOrHelicsCount = fighterAndHelics.get(new Point2D(x, y));
-                        if (fighterOrHelicsCount != null && fighterOrHelicsCount > 0) {
-                            intruders = true;
-                            //entry.setValue(0)
-                            break;
+                    int half = 3;
+                    boolean intruders = false;
+                    for (int x = center.getIntX() - half; x <= center.getIntX() + half; x++) {
+                        for (int y = center.getIntY() - half; y <= center.getIntY() + half; y++) {
+                            Integer fighterOrHelicsCount = fighterAndHelics.get(new Point2D(x, y));
+                            if (fighterOrHelicsCount != null && fighterOrHelicsCount > 0) {
+                                intruders = true;
+                                //entry.setValue(0)
+                                break;
+                            }
                         }
                     }
+
+                    if (intruders) {
+                        myHelicsMap.clear();
+                        break;
+                    }
                 }
 
-                if (intruders) {
-                    myHelicsMap.clear();
-                    break;
+                Set<Map.Entry<Point2D, Integer>> myHelic = myHelicsMap.entrySet();
+
+                double range = (GROUP_SIZE * 2) / cellSize;
+
+                int factor = 6;
+
+                if (!myHelic.isEmpty()) {
+                    subFromArray(plainArray, myHelic, range, factor);
                 }
             }
-
-            Set<Map.Entry<Point2D, Integer>> myHelic = myHelicsMap.entrySet();
-
-            double range = (GROUP_SIZE * 2) / cellSize;
-
-            int factor = 6;
-
-            if (!myHelic.isEmpty()) {
-                subFromArray(plainArray, myHelic, range, factor);
-            }
-
-
         }
+
+        if (vehicleGroupInfo.vehicleType == HELICOPTER) {
+            Map<Point2D, Integer> tanksAndArrv = new HashMap<>(getUnitsCount(true).get(TANK));
+            {
+
+                Map<Point2D, Integer> arrvs = getUnitsCount(true).get(ARRV);
+
+                for (Map.Entry<Point2D, Integer> entry : arrvs.entrySet()) {
+                    tanksAndArrv.put(entry.getKey(), tanksAndArrv.getOrDefault(entry.getValue(), 0) + entry.getValue()); //TODO tune
+                }
+
+
+                Set<Map.Entry<Point2D, Integer>> tanksAndArrvSet = tanksAndArrv.entrySet();
+
+
+                double range = plainArray.cellsWidth * 1.2;
+
+                addToArray(plainArray, tanksAndArrvSet, range, 1.f);
+
+
+                Set<Map.Entry<Point2D, Integer>> enemyHelics = getUnitsCount(true).get(HELICOPTER).entrySet();
+                Set<Map.Entry<Point2D, Integer>> enemyIfv = getUnitsCount(true).get(IFV).entrySet();
+                addToArray(plainArray, enemyIfv, range, .1f); //TODO FEAR
+                addToArray(plainArray, enemyHelics, range, .3f);
+
+                subFromArray(plainArray, enemyIfv, (game.getHelicopterAerialAttackRange() + 10) / cellSize, 1.2f);
+                subFromArray(plainArray, enemyHelics, (game.getIfvAerialAttackRange() + 10) / cellSize, 1.4f);
+            }
+
+
+            {
+                Set<Map.Entry<Point2D, Integer>> ifvCount = getUnitsCount(true).get(FIGHTER).entrySet();
+
+                double range = (game.getFighterAerialAttackRange() * 2.8) / cellSize;
+
+                int factor = 6;
+
+                if (!ifvCount.isEmpty()) {
+                    subFromArray(plainArray, ifvCount, range, factor);
+                }
+            }
+
+            {
+                HashMap<Point2D, Integer> myFightersMap = new HashMap<>(getUnitsCount(false).get(FIGHTER));
+               /* for (Map.Entry<Point2D, Integer> entry : myFightersMap.entrySet()) {
+
+                    Point2D center = entry.getKey();
+
+                    int half = 3;
+                    boolean intruders = false;
+                    for (int x = center.getIntX() - half; x <= center.getIntX() + half; x++) {
+                        for (int y = center.getIntY() - half; y <= center.getIntY() + half; y++) {
+                            Integer fighterOrHelicsCount = tanksAndArrv.get(new Point2D(x, y));
+                            if (fighterOrHelicsCount != null && fighterOrHelicsCount > 0) {
+                                intruders = true;
+                                //entry.setValue(0)
+                                break;
+                            }
+                        }
+                    }
+
+                    if (intruders) {
+                        myFightersMap.clear();
+                        break;
+                    }
+                }*/
+
+                Set<Map.Entry<Point2D, Integer>> myFighters = myFightersMap.entrySet();
+
+                double range = (GROUP_SIZE) / cellSize;
+
+                int factor = 2;
+
+                if (!myFighters.isEmpty()) {
+                    subFromArray(plainArray, myFighters, range, factor);
+                }
+            }
+        }
+
+
         return plainArray;
     }
 
-    private void subFromArray(PlainArray plainArray, Set<Map.Entry<Point2D, Integer>> ifvCount, double range, int factor) {
+    private void addToArray(PlainArray plainArray, Set<Map.Entry<Point2D, Integer>> counts, double range, float factor) {
+        double squareDelta = range * range; //1.4 - hypot
+        for (int x = 0; x < plainArray.cellsWidth; x++) {
+            for (int y = 0; y < plainArray.cellsHeight; y++) {
+
+                for (Map.Entry<Point2D, Integer> entry : counts) {
+                    float val = (100 - entry.getValue()) * factor; //TODO extract 100?
+                    double value = (1 - entry.getKey().squareDistance(x, y) / squareDelta) * val;
+                    plainArray.set(x, y, Math.max(plainArray.get(x, y), value));
+                }
+            }
+        }
+    }
+
+    private void subFromArray(PlainArray plainArray, Set<Map.Entry<Point2D, Integer>> ifvCount, double range, float factor) {
         double squareDelta = range * range;
         for (int x = 0; x < plainArray.cellsWidth; x++) {
             for (int y = 0; y < plainArray.cellsHeight; y++) {
 
                 for (Map.Entry<Point2D, Integer> entry : ifvCount) {
-                    Integer val = entry.getValue() * factor;
+                    float val = entry.getValue() * factor;
                     double value = (1 - entry.getKey().squareDistance(x, y) / squareDelta) * val;
                     if (value > 1) {
                         plainArray.set(x, y, plainArray.get(x, y) - value);
