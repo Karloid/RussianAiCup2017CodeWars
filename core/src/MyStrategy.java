@@ -462,6 +462,28 @@ public final class MyStrategy implements Strategy {
             }
         }
 
+        { //add negative to corners
+            Map<Point2D, Integer> corners = new HashMap<>();
+            int maxIndex = plainArray.cellsWidth - 1;
+            corners.put(new Point2D(0, 0), 1);
+            corners.put(new Point2D(0, maxIndex), 1);
+            corners.put(new Point2D(maxIndex, 0), 1);
+            corners.put(new Point2D(maxIndex, maxIndex), 1);
+            subFromArray(plainArray, corners.entrySet(), 3 * 4, 3);
+
+            Map<Point2D, Integer> sides = new HashMap<>();
+            int[] coordinates = {0, maxIndex};
+            for (int i = 0; i < plainArray.cellsWidth; i++) {
+                sides.put(new Point2D(i, 0), 1);
+                sides.put(new Point2D(i, maxIndex), 1);
+                sides.put(new Point2D(0, i), 1);
+                sides.put(new Point2D(maxIndex, i), 1);
+
+            }
+
+            subFromArray(plainArray, sides.entrySet(), 3 * 3, 1);
+        }
+
 
         return plainArray;
     }
