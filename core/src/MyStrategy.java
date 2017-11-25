@@ -17,6 +17,7 @@ public final class MyStrategy implements Strategy {
     public static final double SHOULD_HEAL_TRESHOLD = 0.64;
     private static final String SPECIAL_TASK = "SPECIAL_TASK";
     private static final String WARN = "WARN";
+    private static final boolean HELICS_WAIT_FOR_FIGHTES = true;
     private static int constantId;
 
     private MyStrategyPainter painter = new EmptyPaintner();
@@ -150,7 +151,7 @@ public final class MyStrategy implements Strategy {
         }
     }
 
-    private PlainArray calcMap(VehicleGroupInfo vehicleGroupInfo) {
+    private PlainArray calcMap(VehicleGroupInfo vehicleGroupInfo) { //TODO improve logic at final stages
         PlainArray plainArray = new PlainArray((int) game.getWorldWidth() / cellSize, (int) game.getWorldHeight() / cellSize);
 
 
@@ -160,6 +161,8 @@ public final class MyStrategy implements Strategy {
         boolean tankShouldHeal = shouldHeal(TANK);
         boolean heliShouldHeal = shouldHeal(HELICOPTER);
         boolean fighterShouldHeal = shouldHeal(FIGHTER);
+
+        //TODO add negative potential for corners and sides
 
 
         if (vehicleGroupInfo.vehicleType == FIGHTER) {
@@ -256,11 +259,30 @@ public final class MyStrategy implements Strategy {
 
                 Set<Map.Entry<Point2D, Integer>> enemyHelics = getUnitsCount(true).get(HELICOPTER).entrySet();
                 Set<Map.Entry<Point2D, Integer>> enemyIfv = getUnitsCount(true).get(IFV).entrySet();
-                addToArray(plainArray, enemyIfv, range, .1f); //TODO FEAR
+                Set<Map.Entry<Point2D, Integer>> enemyFighters = getUnitsCount(true).get(FIGHTER).entrySet();
+
+                addToArray(plainArray, enemyIfv, range, .1f);
                 addToArray(plainArray, enemyHelics, range, .3f);
 
                 subFromArray(plainArray, enemyIfv, (game.getHelicopterAerialAttackRange() + 30) / cellSize, 3.2f);
                 subFromArray(plainArray, enemyHelics, (game.getIfvAerialAttackRange() + 10) / cellSize, 1.4f);
+
+                if (HELICS_WAIT_FOR_FIGHTES) {
+                    VehicleGroupInfo myFighters = findGroup(myGroups, FIGHTER);
+                    if (myFighters != null && myFighters.count > 30) {
+                        double smallestDistance = Double.MAX_VALUE;
+                        Point2D ap = new Point2D(myFighters.getAveragePoint().getX() / cellSize, myFighters.getAveragePoint().getY() / cellSize);
+                        for (Map.Entry<Point2D, Integer> enemyFighter : enemyFighters) {
+                            double distanceTo = enemyFighter.getKey().getDistanceTo(ap);
+                            if (distanceTo < smallestDistance) {
+                                smallestDistance = distanceTo;
+                            }
+                        }
+                        if (smallestDistance < world.getWidth()) {
+                            subFromArray(plainArray, enemyFighters, smallestDistance * 1.1, 1.4f); //TODO NOT TUNED
+                        }
+                    }
+                }
             }
 
 
@@ -477,12 +499,18 @@ public final class MyStrategy implements Strategy {
         }
     }
 
-    private void subFromArray(PlainArray plainArray, Set<Map.Entry<Point2D, Integer>> ifvCount, double range, float factor) {
+    /**
+     * @param plainArray
+     * @param unitsCount
+     * @param range      in cells
+     * @param factor
+     */
+    private void subFromArray(PlainArray plainArray, Set<Map.Entry<Point2D, Integer>> unitsCount, double range, float factor) {
         double squareDelta = range * range;
         for (int x = 0; x < plainArray.cellsWidth; x++) {
             for (int y = 0; y < plainArray.cellsHeight; y++) {
 
-                for (Map.Entry<Point2D, Integer> entry : ifvCount) {
+                for (Map.Entry<Point2D, Integer> entry : unitsCount) {
                     float val = entry.getValue() * factor;
                     double value = (1 - entry.getKey().squareDistance(x, y) / squareDelta) * val;
                     if (value > 1) {
