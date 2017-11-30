@@ -1,9 +1,8 @@
-import java.awt.*;
+import java.awt.Color;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
+import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Locale;
-import java.util.concurrent.ExecutorService;
 
 
 /**
@@ -13,12 +12,8 @@ import java.util.concurrent.ExecutorService;
  */
 public class RewindClient {
 
-    private static String SUPER_STRING;
-    ;
     private final Socket socket;
-    private final OutputStreamWriter outputStream;
-    private String msg = "";
-    private ExecutorService executor;
+    private final OutputStream outputStream;
 
     public enum Side {
         OUR(-1),
@@ -44,6 +39,16 @@ public class RewindClient {
         }
     }
 
+    public enum FacilityType {
+        CONTROL_CENTER(0),
+        VEHICLE_FACTORY(1);
+        final int facilityType;
+
+        FacilityType(int facilityType) {
+            this.facilityType = facilityType;
+        }
+    }
+
     public enum UnitType {
         UNKNOWN(0),
         TANK(1),
@@ -63,23 +68,6 @@ public class RewindClient {
      */
     void endFrame() {
         send("{\"type\":\"end\"}");
-
-      //  msg = SUPER_STRING;
-        //  System.out.println(msg);
-        String msg1 = this.msg;
- /*       try {
-            outputStream.write(msg1);
-         //   System.out.println("written");
-            outputStream.flush();
-        //    System.out.println("flush");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }*/
-
-  /*      executor.submit(() -> {
-
-        });*/
-        msg = "";
     }
 
     void circle(double x, double y, double r, Color color, int layer) {
@@ -94,6 +82,10 @@ public class RewindClient {
         send(String.format("{\"type\": \"line\", \"x1\": %f, \"y1\": %f, \"x2\": %f, \"y2\": %f, \"color\": %d, \"layer\": %d}", x1, y1, x2, y2, color.getRGB(), layer));
     }
 
+    void popup(double x, double y, double r, String text) {
+        send(String.format("{\"type\": \"popup\", \"x\": %f, \"y\": %f, \"r\": %f, \"text\": \"%s \"}", x, y, r, text));
+    }
+
     void livingUnit(double x, double y, double r, int hp, int maxHp,
                     Side side) {
         livingUnit(x, y, r, hp, maxHp, side, 0, UnitType.UNKNOWN, 0, 0, false);
@@ -101,6 +93,24 @@ public class RewindClient {
 
     void areaDescription(int cellX, int cellY, AreaType areaType) {
         send(String.format("{\"type\": \"area\", \"x\": %d, \"y\": %d, \"area_type\": %d}", cellX, cellY, areaType.areaType));
+    }
+
+    /**
+     * Facility - rectangle with texture and progress bars
+     * @param cell_x - x cell of top left facility part
+     * @param cell_y - y cell of top left facility part
+     * @param type - type of facility
+     * @param side - enemy, ally or neutral
+     * @param production - current production progress, set to 0 if no production
+     * @param max_production - maximum production progress, used together with `production`
+     * @param capture - current capture progress, should be in range [-max_capture, max_capture],
+     * where negative values mean that facility is capturing by enemy
+     * @param max_capture - maximum capture progress, used together with `capture`
+     */
+
+    void facility(int cell_x, int cell_y, FacilityType type, Side side, int production, int max_production, int capture, int max_capture) {
+        send(String.format("{\"type\": \"facility\", \"x\": %d, \"y\": %d, \"facility_type\": %d, \"enemy\": %d, \"production\": %d, \"max_production\": %d, \"capture\": %d, \"max_capture\": %d}",
+                cell_x, cell_y, type.facilityType, side.side, production, max_production, capture, max_capture));
     }
 
     void close() {
@@ -148,7 +158,7 @@ public class RewindClient {
         try {
             socket = new Socket(host, port);
             socket.setTcpNoDelay(true);
-            outputStream = new OutputStreamWriter(socket.getOutputStream(), "UTF-8");
+            outputStream = socket.getOutputStream();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -156,26 +166,16 @@ public class RewindClient {
 
     public RewindClient() {
         this("127.0.0.1", 9111);
-
-  /*      try {
-//            SUPER_STRING = new String(Files.readAllBytes(Paths.get("./rewindclienthang.txt")));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }*/
     }
 
     private void send(String buf) {
-        //msg += "\n" + buf;
         try {
-            outputStream.write(buf);
-            //   System.out.println("written");
+            outputStream.write(buf.getBytes());
             outputStream.flush();
-            //    System.out.println("flush");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
-
 
     /**
      * Example of use
