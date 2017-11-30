@@ -64,6 +64,8 @@ public final class MyStrategy implements Strategy {
     private Map<VehicleType, Map<Point2D, Integer>> myUnitsCount;
     private Map<VehicleType, Map<Point2D, Integer>> enemyUnitsCount;
 
+    private Map<Long, Map<FacilityType, Map<Point2D, Integer>>> facilitiesCount;
+
 
     @Override
     public void move(Player me, World world, Game game, Move move) {
@@ -132,6 +134,7 @@ public final class MyStrategy implements Strategy {
 
         //TODO calc potentials
 
+        facilitiesCount = null;
         myUnitsCount = null;
         enemyUnitsCount = null;
         for (VehicleGroupInfo myGroup : myGroups) {
@@ -325,6 +328,9 @@ public final class MyStrategy implements Strategy {
                 addToArray(plainArray, getUnitsCount(true).get(ARRV).entrySet(), range, 0.75f);
 
 
+                addToArrayNotOurFacilities(plainArray, range, .7f);
+
+
                 Set<Map.Entry<Point2D, Integer>> enemyTank = getUnitsCount(true).get(TANK).entrySet();
                 Set<Map.Entry<Point2D, Integer>> enemyIfv = getUnitsCount(true).get(IFV).entrySet();
 
@@ -364,6 +370,8 @@ public final class MyStrategy implements Strategy {
                 addToArray(plainArray, getUnitsCount(true).get(IFV).entrySet(), range, 1.f);
                 addToArray(plainArray, getUnitsCount(true).get(TANK).entrySet(), range, .9f);
                 addToArray(plainArray, getUnitsCount(true).get(ARRV).entrySet(), range, 0.8f);
+
+                addToArrayNotOurFacilities(plainArray, range, .7f);
 
 
                 //secondary targets
@@ -425,6 +433,8 @@ public final class MyStrategy implements Strategy {
                 addToArray(plainArray, fighters, range, .2f);
                 addToArray(plainArray, tanks, range, .3f);
                 addToArray(plainArray, ifvs, range, .3f);
+
+                addToArrayNotOurFacilities(plainArray, range, .7f);
 
                 //TODO chase enemies
 
@@ -489,6 +499,21 @@ public final class MyStrategy implements Strategy {
         return plainArray;
     }
 
+    private void addToArrayNotOurFacilities(PlainArray plainArray, double range, float factor) {
+        //TODO ignore facility if some other ally group is nearby
+        float enemyFactor = 1.1f;
+        float controlCenterFactor = 1.3f;
+        
+        addToArray(plainArray, getFacilitiesCount().get(opponent.getId()).get(FacilityType.CONTROL_CENTER).entrySet(),
+                range, factor * controlCenterFactor * enemyFactor);
+        addToArray(plainArray, getFacilitiesCount().get(-1L).get(FacilityType.CONTROL_CENTER).entrySet(),
+                range, factor * controlCenterFactor);
+        addToArray(plainArray, getFacilitiesCount().get(opponent.getId()).get(FacilityType.VEHICLE_FACTORY).entrySet(),
+                range, factor * enemyFactor);
+        addToArray(plainArray, getFacilitiesCount().get(-1L).get(FacilityType.VEHICLE_FACTORY).entrySet(),
+                range, factor);
+    }
+
     private boolean shouldHeal(VehicleType ifv) {
         VehicleGroupInfo ifvGroup = findGroup(myGroups, ifv);
         return ifvGroup != null && ifvGroup.shouldHeal;
@@ -514,8 +539,10 @@ public final class MyStrategy implements Strategy {
             for (int y = 0; y < plainArray.cellsHeight; y++) {
 
                 for (Map.Entry<Point2D, Integer> entry : counts) {
-                    float val = (100 - entry.getValue()) * factor; //TODO extract 100?
-                    double value = (1 - entry.getKey().squareDistance(x, y) / squareDelta) * val;
+                    float count;
+                        count = Math.max(100 - entry.getValue(), 1) * factor;
+
+                    double value = (1 - entry.getKey().squareDistance(x, y) / squareDelta) * count;
                     plainArray.set(x, y, Math.max(plainArray.get(x, y), value));
                 }
             }
@@ -542,6 +569,33 @@ public final class MyStrategy implements Strategy {
                 }
             }
         }
+    }
+
+    private Map<Long, Map<FacilityType, Map<Point2D, Integer>>> getFacilitiesCount() {
+        if (facilitiesCount == null) {
+            facilitiesCount = new HashMap<>();
+
+            facilitiesCount.put(me.getId(), new HashMap<>());
+            facilitiesCount.put(opponent.getId(), new HashMap<>());
+            facilitiesCount.put(-1L, new HashMap<>());
+
+            for (Map<FacilityType, Map<Point2D, Integer>> map : facilitiesCount.values()) {
+                map.put(FacilityType.CONTROL_CENTER, new HashMap<>());
+                map.put(FacilityType.VEHICLE_FACTORY, new HashMap<>());
+            }
+
+            Facility[] facilities = world.getFacilities();
+            for (Facility facility : facilities) {
+                Point2D key = new Point2D((facility.getLeft() + WORLD_CELL_SIZE) / cellSize,
+                        (facility.getTop() + WORLD_CELL_SIZE) / cellSize);
+
+                Map<Point2D, Integer> map = facilitiesCount.get(facility.getOwnerPlayerId()).get(facility.getType());
+                map.put(key, map.getOrDefault(key, 0) + 1);
+            }
+        }
+
+
+        return facilitiesCount;
     }
 
     private Map<VehicleType, Map<Point2D, Integer>> getUnitsCount(boolean enemy) {
