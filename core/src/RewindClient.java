@@ -1,4 +1,4 @@
-import java.awt.Color;
+import java.awt.*;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -46,6 +46,16 @@ public class RewindClient {
 
         FacilityType(int facilityType) {
             this.facilityType = facilityType;
+        }
+
+        public static FacilityType from(model.FacilityType type) {
+            switch (type) {
+                case CONTROL_CENTER:
+                    return CONTROL_CENTER;
+                case VEHICLE_FACTORY:
+                    return VEHICLE_FACTORY;
+            }
+            return CONTROL_CENTER;
         }
     }
 
@@ -97,15 +107,16 @@ public class RewindClient {
 
     /**
      * Facility - rectangle with texture and progress bars
-     * @param cell_x - x cell of top left facility part
-     * @param cell_y - y cell of top left facility part
-     * @param type - type of facility
-     * @param side - enemy, ally or neutral
-     * @param production - current production progress, set to 0 if no production
+     *
+     * @param cell_x         - x cell of top left facility part
+     * @param cell_y         - y cell of top left facility part
+     * @param type           - type of facility
+     * @param side           - enemy, ally or neutral
+     * @param production     - current production progress, set to 0 if no production
      * @param max_production - maximum production progress, used together with `production`
-     * @param capture - current capture progress, should be in range [-max_capture, max_capture],
-     * where negative values mean that facility is capturing by enemy
-     * @param max_capture - maximum capture progress, used together with `capture`
+     * @param capture        - current capture progress, should be in range [-max_capture, max_capture],
+     *                       where negative values mean that facility is capturing by enemy
+     * @param max_capture    - maximum capture progress, used together with `capture`
      */
 
     void facility(int cell_x, int cell_y, FacilityType type, Side side, int production, int max_production, int capture, int max_capture) {

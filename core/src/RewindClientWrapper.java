@@ -62,7 +62,29 @@ public class RewindClientWrapper implements MyStrategyPainter {
                             Point2D.getDistance(x, y, veh.v.getX(), veh.v.getY()), veh.v.getVisionRange()));
                 }
             }
+        }
 
+        Facility[] facilities = mys.world.getFacilities();
+        int cellSize = (int) MyStrategy.WORLD_CELL_SIZE;
+        for (int i = 0; i < facilities.length; i++) {
+            Facility facility = facilities[i];
+            long ownerId = facility.getOwnerPlayerId();
+            RewindClient.Side side;
+            if (ownerId == -1) {
+                side = RewindClient.Side.NEUTRAL;
+            } else if (ownerId == mys.me.getId()) {
+                side = RewindClient.Side.OUR;
+            } else {
+                side = RewindClient.Side.ENEMY;
+            }
+            rc.facility((int) Math.round(facility.getLeft()) / cellSize,
+                    (int) Math.round(facility.getTop()) / cellSize,
+                    RewindClient.FacilityType.from(facility.getType()),
+                    side,
+                    facility.getProductionProgress(),
+                    100,
+                    (int) facility.getCapturePoints(),
+                    (int) mys.game.getMaxFacilityCapturePoints());
         }
     }
 

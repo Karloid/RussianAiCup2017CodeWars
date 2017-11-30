@@ -9,6 +9,7 @@ import static model.VehicleType.*;
 
 @SuppressWarnings({"UnsecureRandomNumberGeneration", "FieldCanBeLocal", "unused", "OverlyLongMethod"})
 public final class MyStrategy implements Strategy {
+    public static final int WORLD_CELL_SIZE = 32;
     public static final double GROUP_SIZE = 50;
     public static final double GROUP_HALF_SIZE = GROUP_SIZE / 2;
     public static final int MIN_NUCLEAR_DMG = 500;
