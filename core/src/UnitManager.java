@@ -1,3 +1,4 @@
+import model.Facility;
 import model.Vehicle;
 import model.VehicleType;
 import model.VehicleUpdate;
@@ -10,6 +11,7 @@ public class UnitManager {
     private MyStrategy mys;
 
     final Map<Long, VehicleWrapper> vehicleById = new HashMap<>();
+    final Map<Long, FacilityWrapper> facilityById = new HashMap<>();
     private List<VehicleWrapper> deadVehicles = new ArrayList<>();
 
     TickStats myStats;
@@ -38,25 +40,24 @@ public class UnitManager {
         for (VehicleUpdate vehicleUpdate : mys.world.getVehicleUpdates()) {
             long vehicleId = vehicleUpdate.getId();
 
-            if (vehicleUpdate.getDurability() == 0) {
-                VehicleWrapper deadVehicle = vehicleById.get(vehicleId);
-                deadVehicles.add(deadVehicle);
-                vehicleById.remove(deadVehicle.v.getId());
-            } else {
-                VehicleWrapper veh = vehicleById.get(vehicleId);
-                veh.update(new Vehicle(veh.v, vehicleUpdate));
-                if (veh.hpDelta != 0) {
-                    TickStats stats = veh.isEnemy ? enemyStats : myStats;
-                    if (veh.hpDelta > 0) {
-                        stats.healedPoints += veh.hpDelta;
-                    } else {
-                        stats.damagedPoints += veh.hpDelta;
-                        stats.damagedUnits += 1;
-                        if (veh.v.getDurability() <= 0) {
-                            stats.destroyedUnits += 1;
-                        }
+            VehicleWrapper veh = vehicleById.get(vehicleId);
+            veh.update(new Vehicle(veh.v, vehicleUpdate));
+            if (veh.hpDelta != 0) {
+                TickStats stats = veh.isEnemy ? enemyStats : myStats;
+                if (veh.hpDelta > 0) {
+                    stats.healedPoints += veh.hpDelta;
+                } else {
+                    stats.damagedPoints += veh.hpDelta;
+                    stats.damagedUnits += 1;
+                    if (veh.v.getDurability() <= 0) {
+                        stats.destroyedUnits += 1;
                     }
                 }
+            }
+
+            if (vehicleUpdate.getDurability() == 0) {
+                deadVehicles.add(veh);
+                vehicleById.remove(veh.v.getId());
             }
         }
 
@@ -70,6 +71,22 @@ public class UnitManager {
             stats.remainingUnits++;
             stats.remainingHp += u.v.getDurability();
         }
+
+
+        //facilities
+        Facility[] facilities = mys.world.getFacilities();
+        if (facilityById.isEmpty()) {
+            for (Facility facility : facilities) {
+                facilityById.put(facility.getId(), new FacilityWrapper(facility, mys));
+            }
+        } else {
+            for (int i = 0; i < facilities.length; i++) {
+                Facility facility = facilities[i];
+                facilityById.get(facility.getId()).update(facility);
+            }
+        }
+
+
         if (myStats.isNonEmpty()) {
             mys.log("My stats: " + myStats);
         }
