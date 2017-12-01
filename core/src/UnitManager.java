@@ -40,25 +40,25 @@ public class UnitManager {
         for (VehicleUpdate vehicleUpdate : mys.world.getVehicleUpdates()) {
             long vehicleId = vehicleUpdate.getId();
 
+            VehicleWrapper veh = vehicleById.get(vehicleId);
+            veh.update(new Vehicle(veh.v, vehicleUpdate));
+            if (veh.hpDelta != 0) {
+                TickStats stats = veh.isEnemy ? enemyStats : myStats;
+                if (veh.hpDelta > 0) {
+                    stats.healedPoints += veh.hpDelta;
+                } else {
+                    stats.damagedPoints += veh.hpDelta;
+                    stats.damagedUnits += 1;
+                    if (veh.v.getDurability() <= 0) {
+                        stats.destroyedUnits += 1;
+                    }
+                }
+            }
+
             if (vehicleUpdate.getDurability() == 0) {
                 VehicleWrapper deadVehicle = vehicleById.get(vehicleId);
                 deadVehicles.add(deadVehicle);
                 vehicleById.remove(deadVehicle.v.getId());
-            } else {
-                VehicleWrapper veh = vehicleById.get(vehicleId);
-                veh.update(new Vehicle(veh.v, vehicleUpdate));
-                if (veh.hpDelta != 0) {
-                    TickStats stats = veh.isEnemy ? enemyStats : myStats;
-                    if (veh.hpDelta > 0) {
-                        stats.healedPoints += veh.hpDelta;
-                    } else {
-                        stats.damagedPoints += veh.hpDelta;
-                        stats.damagedUnits += 1;
-                        if (veh.v.getDurability() <= 0) {
-                            stats.destroyedUnits += 1;
-                        }
-                    }
-                }
             }
         }
 

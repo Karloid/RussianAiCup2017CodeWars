@@ -1,6 +1,5 @@
 import model.*;
 
-import java.awt.geom.Rectangle2D;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -180,7 +179,7 @@ public final class MyStrategy implements Strategy {
                                     type = HELICOPTER;
                                     break;
                                 case FIGHTER:
-                                    type = Math.random() < 0.24 ? FIGHTER : IFV;
+                                    type = Math.random() < 0.34 ? FIGHTER : IFV;
                                     break;
                                 case HELICOPTER:
                                     type = FIGHTER;
@@ -811,7 +810,7 @@ public final class MyStrategy implements Strategy {
     /**
      * Основная логика нашей стратегии.
      */
-    private void oldMove() {
+    /*private void oldMove() {
         enemyGroups = getGroups(Ownership.ENEMY);
         refreshGroups(myGroups);
 
@@ -866,7 +865,7 @@ public final class MyStrategy implements Strategy {
                     continue;
                 }
 
-                if (enFighters == null || enFighters.count / (myGroup.count * 1.f) <= 0.3 /*|| getSmartDistance(myGroup, enFighters) > 400*/) {
+                if (enFighters == null || enFighters.count / (myGroup.count * 1.f) <= 0.3 *//*|| getSmartDistance(myGroup, enFighters) > 400*//*) {
 
                     if (enTanks != null && getSmartDistance(enTanks, enIFV) > 100) {  //attack tanks
                         scheduleSelectAll(myGroup);
@@ -991,7 +990,7 @@ public final class MyStrategy implements Strategy {
             }
         }
 
-    }
+    }*/
 
     private boolean initialScale(VehicleGroupInfo myGroup) {
         if (!myGroup.isScaled) {
@@ -1115,7 +1114,7 @@ public final class MyStrategy implements Strategy {
         return g1.getAveragePoint().getDistanceTo(g2.getAveragePoint());
     }
 
-    private void scaleToKover(VehicleGroupInfo myGroup) {
+    /*private void scaleToKover(VehicleGroupInfo myGroup) {
         Rectangle2D rect = myGroup.pointsInfo.rect;
         if (rect.getWidth() < 200 || rect.getHeight() < 200) {
             scheduleSelectAll(myGroup);
@@ -1125,9 +1124,9 @@ public final class MyStrategy implements Strategy {
                 move1.setY(myGroup.getAveragePoint().getY());
             });
         }
-    }
+    }*/
 
-    private void scheduleShrink(VehicleGroupInfo myGroup) {
+    /*private void scheduleShrink(VehicleGroupInfo myGroup) {
         myGroup.lastShrinkI = world.getTickIndex();
         scheduleSelectAll(myGroup);
         delayedMoves.add(move1 -> {
@@ -1144,7 +1143,7 @@ public final class MyStrategy implements Strategy {
             move1.setY(myGroup.getAveragePoint().getY() + 15);
             move1.setFactor(0.1);
         });
-    }
+    }*/
 
     private void clearAndSelectOneUnit(NuclearStrike max, Move move1, VehicleWrapper unit) {
         move1.setAction(ActionType.CLEAR_AND_SELECT);
@@ -1167,10 +1166,14 @@ public final class MyStrategy implements Strategy {
 
     private void refreshGroups(List<VehicleGroupInfo> groups) {
         for (VehicleGroupInfo group : groups) {
-            VehicleGroupInfo currentState = getGroup(group.ownership, group.vehicleType); //TODO optimize
-            group.pointsInfo = currentState.pointsInfo;
-            group.count = currentState.count;
-            group.vehicles = currentState.vehicles;
+            group.vehicles.removeIf(vehicleWrapper -> vehicleWrapper.v.getDurability() == 0);
+
+            group.count = 0;
+            group.pointsInfo = group.vehicles.stream()
+                    .map(vehicle -> new Point2D(vehicle.v.getX(), vehicle.v.getY()))
+                    .collect(Utils.POINT_COLLECTOR);
+            
+            group.count = group.vehicles.size();
         }
 
         groups.removeIf(vehicleGroupInfo -> vehicleGroupInfo.count == 0);
@@ -1316,11 +1319,15 @@ public final class MyStrategy implements Strategy {
         if (groupInfo.groupNumber == 0) {
             delayedMoves.add(move -> {
                 move.setAction(ActionType.CLEAR_AND_SELECT);
-                move.setRight(world.getWidth());
-                move.setBottom(world.getHeight());
+
+                move.setLeft(groupInfo.pointsInfo.rect.getMinX());
+                move.setRight(groupInfo.pointsInfo.rect.getMaxX());
+                move.setTop(groupInfo.pointsInfo.rect.getMinY());
+                move.setBottom(groupInfo.pointsInfo.rect.getMaxY());
+
                 move.setVehicleType(groupInfo.vehicleType);
             });
-
+             //TODO fix possible bug when addFirst breaks order
             delayedMoves.add(move -> {
                 groupInfo.groupNumber = groupNextIndex;
                 groupNextIndex++;
