@@ -172,6 +172,7 @@ public final class MyStrategy implements Strategy {
                         } else {
                             VehicleGroupInfo max = Collections.max(enemyGroups, Comparator.comparingInt(o -> o.count));
                             //TODO look at our groups
+                            //TODO carefull pick! look for near by enemies like fighters
                             switch (max.vehicleType) {
                                 case TANK:
                                 case ARRV:
