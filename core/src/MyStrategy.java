@@ -65,6 +65,7 @@ public final class MyStrategy implements Strategy {
     private Map<VehicleType, Map<Point2D, Integer>> enemyUnitsCount;
 
     private Map<Long, Map<FacilityType, Map<Point2D, Integer>>> facilitiesCount;
+    private Map<Long, VehicleType> setupVehiclesByFacilityId = new HashMap<>();
 
 
     @Override
@@ -127,12 +128,11 @@ public final class MyStrategy implements Strategy {
 
         refreshGroups(myGroups);
 
-        if (tryPickNuclearTarget()) return;  //my work badly
+        if (tryPickNuclearTarget()) return;  //may work badly ?
 
         tryEvadeNuclearTarget();
 
-
-        //TODO calc potentials
+        if (trySetProduction()) return;
 
         facilitiesCount = null;
         myUnitsCount = null;
@@ -153,6 +153,53 @@ public final class MyStrategy implements Strategy {
                 schedulePotentialMoveToPoint(myGroup);
             }
         }
+    }
+
+    private boolean trySetProduction() {
+        Collection<FacilityWrapper> values = um.facilityById.values();
+        for (FacilityWrapper fw : values) {
+            if (fw.shouldSetProduction()) {
+                fw.isProductionSet = true;
+                delayedMoves.add(m -> {
+                    //TODO create other types of vehicles
+                    m.setAction(ActionType.SETUP_VEHICLE_PRODUCTION);
+                    m.setFacilityId(fw.f.getId());
+                    VehicleType type = null;
+                    //type = setupVehiclesByFacilityId.get(fw.f.getId());
+                    //noinspection ConstantConditions
+                    if (type == null) {
+                        if (enemyGroups.isEmpty()) {
+                            type = IFV; //very strange
+                            log(WARN + " empty enemy groups!");
+                        } else {
+                            VehicleGroupInfo max = Collections.max(enemyGroups, Comparator.comparingInt(o -> o.count));
+                            //TODO look at our groups
+                            switch (max.vehicleType) {
+                                case TANK:
+                                case ARRV:
+                                    type = HELICOPTER;
+                                    break;
+                                case FIGHTER:
+                                    type = Math.random() < 0.24 ? FIGHTER : IFV;
+                                    break;
+                                case HELICOPTER:
+                                    type = FIGHTER;
+                                    break;
+                                case IFV:
+                                    type = TANK;
+                                    break;
+                            }
+                        }
+                        setupVehiclesByFacilityId.put(fw.f.getId(), type);
+                    }
+                    m.setVehicleType(type);
+
+                });
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private PlainArray calcMap(VehicleGroupInfo vehicleGroupInfo) { //TODO improve logic at final stages
@@ -502,8 +549,8 @@ public final class MyStrategy implements Strategy {
     private void addToArrayNotOurFacilities(PlainArray plainArray, double range, float factor) {
         //TODO ignore facility if some other ally group is nearby
         float enemyFactor = 1.1f;
-        float controlCenterFactor = 1.3f;
-        
+        float controlCenterFactor = 1;
+
         addToArray(plainArray, getFacilitiesCount().get(opponent.getId()).get(FacilityType.CONTROL_CENTER).entrySet(),
                 range, factor * controlCenterFactor * enemyFactor);
         addToArray(plainArray, getFacilitiesCount().get(-1L).get(FacilityType.CONTROL_CENTER).entrySet(),
@@ -540,7 +587,7 @@ public final class MyStrategy implements Strategy {
 
                 for (Map.Entry<Point2D, Integer> entry : counts) {
                     float count;
-                        count = Math.max(100 - entry.getValue(), 1) * factor;
+                    count = Math.max(100 - entry.getValue(), 1) * factor;
 
                     double value = (1 - entry.getKey().squareDistance(x, y) / squareDelta) * count;
                     plainArray.set(x, y, Math.max(plainArray.get(x, y), value));

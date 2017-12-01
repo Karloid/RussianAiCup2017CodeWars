@@ -1,3 +1,4 @@
+import model.Facility;
 import model.Vehicle;
 import model.VehicleType;
 import model.VehicleUpdate;
@@ -10,6 +11,7 @@ public class UnitManager {
     private MyStrategy mys;
 
     final Map<Long, VehicleWrapper> vehicleById = new HashMap<>();
+    final Map<Long, FacilityWrapper> facilityById = new HashMap<>();
     private List<VehicleWrapper> deadVehicles = new ArrayList<>();
 
     TickStats myStats;
@@ -70,6 +72,22 @@ public class UnitManager {
             stats.remainingUnits++;
             stats.remainingHp += u.v.getDurability();
         }
+
+
+        //facilities
+        Facility[] facilities = mys.world.getFacilities();
+        if (facilityById.isEmpty()) {
+            for (Facility facility : facilities) {
+                facilityById.put(facility.getId(), new FacilityWrapper(facility, mys));
+            }
+        } else {
+            for (int i = 0; i < facilities.length; i++) {
+                Facility facility = facilities[i];
+                facilityById.get(facility.getId()).update(facility);
+            }
+        }
+
+
         if (myStats.isNonEmpty()) {
             mys.log("My stats: " + myStats);
         }
