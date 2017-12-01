@@ -66,6 +66,7 @@ public final class MyStrategy implements Strategy {
     private Map<Long, Map<FacilityType, Map<Point2D, Integer>>> facilitiesCount;
     private Map<Long, VehicleType> setupVehiclesByFacilityId = new HashMap<>();
     private final int FACILITY_SIZE_TO_GO = 30;
+    private VehicleGroupInfo currentMapGroup;
 
 
     @Override
@@ -134,9 +135,6 @@ public final class MyStrategy implements Strategy {
 
         if (trySetProduction()) return;
 
-        facilitiesCount = null;
-        myUnitsCount = null;
-        enemyUnitsCount = null;
         for (VehicleGroupInfo myGroup : myGroups) {
 
             if (myGroup.isMovingToPoint()) {
@@ -205,6 +203,11 @@ public final class MyStrategy implements Strategy {
     private PlainArray calcMap(VehicleGroupInfo vehicleGroupInfo) { //TODO improve logic at final stages
         PlainArray plainArray = new PlainArray((int) game.getWorldWidth() / cellSize, (int) game.getWorldHeight() / cellSize);
 
+        facilitiesCount = null;
+        myUnitsCount = null;
+        enemyUnitsCount = null;
+
+        currentMapGroup = vehicleGroupInfo;
 
         refreshShouldHeal(myGroups);
 
@@ -294,6 +297,11 @@ public final class MyStrategy implements Strategy {
                 if (!myHelic.isEmpty()) {
                     subFromArray(plainArray, myHelic, range, factor);
                 }
+
+                Set<Map.Entry<Point2D, Integer>> otherFighters = getUnitsCount(false).get(FIGHTER).entrySet();
+                if (!otherFighters.isEmpty()) {
+                    subFromArray(plainArray, otherFighters, range * .8f, factor);
+                }
             }
         }
 
@@ -347,6 +355,11 @@ public final class MyStrategy implements Strategy {
                 if (!fighters.isEmpty()) {
                     subFromArray(plainArray, fighters, range, factor);
                 }
+
+                Set<Map.Entry<Point2D, Integer>> otherHelicopters = getUnitsCount(false).get(HELICOPTER).entrySet();
+                if (!otherHelicopters.isEmpty()) {
+                    subFromArray(plainArray, otherHelicopters, (GROUP_SIZE * 1.8) / cellSize, factor);
+                }
             }
 
             {
@@ -395,14 +408,18 @@ public final class MyStrategy implements Strategy {
                     myGroundUnits.putAll(getUnitsCount(false).get(ARRV));
                 }
 
-                Set<Map.Entry<Point2D, Integer>> myFighters = myGroundUnits.entrySet();
+                myGroundUnits.putAll(getUnitsCount(false).get(IFV));
+                //TODO fix problems with overlaping?
+
+
+                Set<Map.Entry<Point2D, Integer>> myGroundUnitsSet = myGroundUnits.entrySet();
 
                 double range = (GROUP_SIZE * 1.3) / cellSize;
 
                 int factor = 2;
 
-                if (!myFighters.isEmpty()) {
-                    subFromArray(plainArray, myFighters, range, factor);
+                if (!myGroundUnitsSet.isEmpty()) {
+                    subFromArray(plainArray, myGroundUnitsSet, range, factor);
                 }
             }
         }
@@ -439,6 +456,9 @@ public final class MyStrategy implements Strategy {
                 if (!tankShouldHeal) {
                     myGroundUnits.putAll(getUnitsCount(false).get(ARRV));
                 }
+
+                myGroundUnits.putAll(getUnitsCount(false).get(TANK));
+                //TODO fix problems with overlaping1?
 
                 Set<Map.Entry<Point2D, Integer>> myGroundUnits2 = myGroundUnits.entrySet();
 
@@ -507,6 +527,9 @@ public final class MyStrategy implements Strategy {
                 grounUnits.putAll(getUnitsCount(true).get(TANK));
                 grounUnits.putAll(getUnitsCount(true).get(IFV));
                 grounUnits.putAll(getUnitsCount(true).get(ARRV));
+
+                grounUnits.putAll(getUnitsCount(false).get(ARRV));
+                //TODO fix problems with overlaping1?
 
                 Set<Map.Entry<Point2D, Integer>> myGroundUnits2 = grounUnits.entrySet();
 
@@ -656,6 +679,10 @@ public final class MyStrategy implements Strategy {
 
 
             for (VehicleWrapper vehicle : um.vehicleById.values()) {
+                if (currentMapGroup.vehicles.contains(vehicle)) {
+                    continue;
+                }
+
                 Point2D key = new Point2D(vehicle.getCellX(cellSize), vehicle.getCellY(cellSize));
 
                 Map<VehicleType, Map<Point2D, Integer>> map = vehicle.isEnemy ? enemyUnitsCount : myUnitsCount;
@@ -1178,9 +1205,16 @@ public final class MyStrategy implements Strategy {
 
         Collection<VehicleWrapper> freeUnits = um.vehicleById.values().stream()
                 .filter(vehicleWrapper -> {
-                    if (vehicleWrapper.isEnemy) {
+
+                    if (vehicleWrapper.isEnemy ) {
                         return false;
                     }
+
+                    int[] unitGroups = vehicleWrapper.v.getGroups();
+                    if (unitGroups != null && unitGroups.length > 0) {
+                        return false;
+                    }
+
                     for (VehicleGroupInfo group : groups) {
                         if (group.vehicles.contains(vehicleWrapper)) {
                             return false;

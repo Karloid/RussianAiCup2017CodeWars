@@ -56,9 +56,8 @@ public class UnitManager {
             }
 
             if (vehicleUpdate.getDurability() == 0) {
-                VehicleWrapper deadVehicle = vehicleById.get(vehicleId);
-                deadVehicles.add(deadVehicle);
-                vehicleById.remove(deadVehicle.v.getId());
+                deadVehicles.add(veh);
+                vehicleById.remove(veh.v.getId());
             }
         }
 
