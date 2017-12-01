@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class VehicleGroupInfo {
+    public long facilityId = -100;
+
     final VehicleType vehicleType; //just testing
     private MyStrategy myStrategy;
     public int count;
@@ -40,7 +42,7 @@ public class VehicleGroupInfo {
     }
 
     public boolean isMovingToPoint() {  //TODO calc distance
-        return moveToPoint != null && myStrategy.um.getMinTimeWithoutUpdates(this) < 2 ; //TODO check size
+        return moveToPoint != null && myStrategy.um.getMinTimeWithoutUpdates(this) < 2; //TODO check size
     }
 
     public boolean itsTooBig() {

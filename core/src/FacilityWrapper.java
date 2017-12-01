@@ -4,6 +4,7 @@ public class FacilityWrapper {
     public Facility f;
     private final MyStrategy mys;
     public boolean isProductionSet;
+    private Point2D point2D;
 
     public FacilityWrapper(Facility facility, MyStrategy mys) {
         f = facility;
@@ -26,5 +27,12 @@ public class FacilityWrapper {
 
     public boolean shouldSetProduction() {
         return isMy() && !isProductionSet;
+    }
+
+    public Point2D getCenterPos() {
+        if (point2D == null) {
+            point2D = new Point2D(f.getLeft() + mys.game.getFacilityWidth() / 2, f.getTop() + mys.game.getFacilityHeight() / 2);
+        }
+        return point2D;
     }
 }

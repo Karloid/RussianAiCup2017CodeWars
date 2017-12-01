@@ -65,6 +65,7 @@ public final class MyStrategy implements Strategy {
 
     private Map<Long, Map<FacilityType, Map<Point2D, Integer>>> facilitiesCount;
     private Map<Long, VehicleType> setupVehiclesByFacilityId = new HashMap<>();
+    private final int FACILITY_SIZE_TO_GO = 30;
 
 
     @Override
@@ -125,7 +126,7 @@ public final class MyStrategy implements Strategy {
 
     private void potentialMove() {
 
-        refreshGroups(myGroups);
+        refreshGroups(myGroups, true);
 
         if (tryPickNuclearTarget()) return;  //may work badly ?
 
@@ -991,7 +992,6 @@ public final class MyStrategy implements Strategy {
         }
 
     }*/
-
     private boolean initialScale(VehicleGroupInfo myGroup) {
         if (!myGroup.isScaled) {
             myGroup.isScaled = true;
@@ -1164,20 +1164,83 @@ public final class MyStrategy implements Strategy {
         return null;
     }
 
-    private void refreshGroups(List<VehicleGroupInfo> groups) {
+    private void refreshGroups(List<VehicleGroupInfo> groups, boolean findNewGroups) {
         for (VehicleGroupInfo group : groups) {
-            group.vehicles.removeIf(vehicleWrapper -> vehicleWrapper.v.getDurability() == 0);
-
-            group.count = 0;
-            group.pointsInfo = group.vehicles.stream()
-                    .map(vehicle -> new Point2D(vehicle.v.getX(), vehicle.v.getY()))
-                    .collect(Utils.POINT_COLLECTOR);
-            
-            group.count = group.vehicles.size();
+            refreshGroup(group);
         }
 
         groups.removeIf(vehicleGroupInfo -> vehicleGroupInfo.count == 0);
 
+
+        if (!findNewGroups) {
+            return;
+        }
+
+        Collection<VehicleWrapper> freeUnits = um.vehicleById.values().stream()
+                .filter(vehicleWrapper -> {
+                    if (vehicleWrapper.isEnemy) {
+                        return false;
+                    }
+                    for (VehicleGroupInfo group : groups) {
+                        if (group.vehicles.contains(vehicleWrapper)) {
+                            return false;
+                        }
+                    }
+                    return true;
+                })
+                .collect(Collectors.toList());
+
+        if (freeUnits.isEmpty()) {
+            return;
+        }
+
+        if (um.facilityById.isEmpty()) {
+            log(WARN + " facilities is not initialized!!");
+            return;
+        }
+
+        List<VehicleGroupInfo> groupsCandidates = new ArrayList<>(0);
+
+        for (VehicleWrapper freeUnit : freeUnits) {
+            Collection<FacilityWrapper> values = um.facilityById.values();
+            FacilityWrapper min = Collections.min(values, Comparator.comparingDouble(value -> freeUnit.getPos(0).getDistanceTo(value.getCenterPos())));
+            long facilityId = min.f.getId();
+            VehicleType vehType = freeUnit.v.getType();
+
+            boolean found = false;
+            for (VehicleGroupInfo group : groupsCandidates) {
+                if (group.facilityId == facilityId && group.vehicleType == vehType) {
+                    found = true;
+                    group.vehicles.add(freeUnit);
+                    break;
+                }
+            }
+            if (!found) {
+                VehicleGroupInfo e = new VehicleGroupInfo(Ownership.ALLY, vehType, this);
+                e.facilityId = facilityId;
+                e.vehicles = new ArrayList<>();
+                e.vehicles.add(freeUnit);
+                groupsCandidates.add(e);
+            }
+        }
+
+        for (VehicleGroupInfo groupsCandidate : groupsCandidates) {
+            if (groupsCandidate.vehicles.size() > FACILITY_SIZE_TO_GO) {
+                refreshGroup(groupsCandidate);
+                groups.add(0, groupsCandidate);
+            }
+        }
+    }
+
+    private void refreshGroup(VehicleGroupInfo group) {
+        group.vehicles.removeIf(vehicleWrapper -> vehicleWrapper.v.getDurability() == 0);
+
+        group.count = 0;
+        group.pointsInfo = group.vehicles.stream()
+                .map(vehicle -> new Point2D(vehicle.v.getX(), vehicle.v.getY()))
+                .collect(Utils.POINT_COLLECTOR);
+
+        group.count = group.vehicles.size();
     }
 
     private boolean moveToAllyGroup(VehicleGroupInfo myGroup, VehicleType allyType) {
@@ -1230,7 +1293,7 @@ public final class MyStrategy implements Strategy {
         delayedMoves.add(move -> {
             ArrayList<VehicleGroupInfo> groups = new ArrayList<>();
             groups.add(myGroup);
-            refreshGroups(groups);
+            refreshGroups(groups, false);
 
             if (groups.isEmpty()) {
                 log(WARN + "group " + myGroup + " is destroyed");
@@ -1327,7 +1390,7 @@ public final class MyStrategy implements Strategy {
 
                 move.setVehicleType(groupInfo.vehicleType);
             });
-             //TODO fix possible bug when addFirst breaks order
+            //TODO fix possible bug when addFirst breaks order
             delayedMoves.add(move -> {
                 groupInfo.groupNumber = groupNextIndex;
                 groupNextIndex++;
