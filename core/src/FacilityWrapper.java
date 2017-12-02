@@ -1,10 +1,12 @@
 import model.Facility;
+import model.VehicleType;
 
 public class FacilityWrapper {
     public Facility f;
     private final MyStrategy mys;
     public boolean isProductionSet;
     private Point2D point2D;
+    public VehicleType productType;
 
     public FacilityWrapper(Facility facility, MyStrategy mys) {
         f = facility;
@@ -18,10 +20,11 @@ public class FacilityWrapper {
 
         if (isMy() != oldIsMy) {
             isProductionSet = false;
+            productType = null;
         }
     }
 
-    private boolean isMy() {
+    public boolean isMy() {
         return f.getOwnerPlayerId() == mys.me.getId();
     }
 

@@ -32,11 +32,51 @@ public class UnitManager {
         myStats = new TickStats();
         enemyStats = new TickStats();
 
-        for (Vehicle vehicle : mys.world.getNewVehicles()) {
-            VehicleWrapper mv = new VehicleWrapper(vehicle, mys);
-            vehicleById.put(vehicle.getId(), mv);
-        }
+        initTickNewVehicles();
 
+        initTickVehUpdates();
+
+
+        initTickVehCalcStats();
+        initTickFacUpdates();
+
+
+        if (myStats.isNonEmpty()) {
+            mys.log("My stats: " + myStats);
+        }
+        if (enemyStats.isNonEmpty()) {
+            mys.log("Enemy stats: " + enemyStats);
+        }
+    }
+
+    private void initTickFacUpdates() {
+        //facilities
+        Facility[] facilities = mys.world.getFacilities();
+        if (facilityById.isEmpty()) {
+            for (Facility facility : facilities) {
+                facilityById.put(facility.getId(), new FacilityWrapper(facility, mys));
+            }
+        } else {
+            for (int i = 0; i < facilities.length; i++) {
+                Facility facility = facilities[i];
+                facilityById.get(facility.getId()).update(facility);
+            }
+        }
+    }
+
+    private void initTickVehCalcStats() {
+        Collection<VehicleWrapper> allUnits = vehicleById.values();
+
+        for (Iterator<VehicleWrapper> iterator = allUnits.iterator(); iterator.hasNext(); ) {
+            VehicleWrapper u = iterator.next();
+            TickStats stats = u.isEnemy ? enemyStats : myStats;
+
+            stats.remainingUnits++;
+            stats.remainingHp += u.v.getDurability();
+        }
+    }
+
+    private void initTickVehUpdates() {
         for (VehicleUpdate vehicleUpdate : mys.world.getVehicleUpdates()) {
             long vehicleId = vehicleUpdate.getId();
 
@@ -60,38 +100,12 @@ public class UnitManager {
                 vehicleById.remove(veh.v.getId());
             }
         }
+    }
 
-
-        Collection<VehicleWrapper> allUnits = vehicleById.values();
-
-        for (Iterator<VehicleWrapper> iterator = allUnits.iterator(); iterator.hasNext(); ) {
-            VehicleWrapper u = iterator.next();
-            TickStats stats = u.isEnemy ? enemyStats : myStats;
-
-            stats.remainingUnits++;
-            stats.remainingHp += u.v.getDurability();
-        }
-
-
-        //facilities
-        Facility[] facilities = mys.world.getFacilities();
-        if (facilityById.isEmpty()) {
-            for (Facility facility : facilities) {
-                facilityById.put(facility.getId(), new FacilityWrapper(facility, mys));
-            }
-        } else {
-            for (int i = 0; i < facilities.length; i++) {
-                Facility facility = facilities[i];
-                facilityById.get(facility.getId()).update(facility);
-            }
-        }
-
-
-        if (myStats.isNonEmpty()) {
-            mys.log("My stats: " + myStats);
-        }
-        if (enemyStats.isNonEmpty()) {
-            mys.log("Enemy stats: " + enemyStats);
+    private void initTickNewVehicles() {
+        for (Vehicle vehicle : mys.world.getNewVehicles()) {
+            VehicleWrapper mv = new VehicleWrapper(vehicle, mys);
+            vehicleById.put(vehicle.getId(), mv);
         }
     }
 

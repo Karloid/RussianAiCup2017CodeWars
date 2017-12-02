@@ -68,7 +68,6 @@ public final class MyStrategy implements Strategy {
     private Map<VehicleType, Map<Point2D, Integer>> enemyUnitsCount;
 
     private Map<Long, Map<FacilityType, Map<Point2D, Integer>>> facilitiesCount;
-    private Map<Long, VehicleType> setupVehiclesByFacilityId = new HashMap<>();
     private final int FACILITY_SIZE_TO_GO = 30;
     private VehicleGroupInfo currentMapGroup;
 
@@ -149,8 +148,6 @@ public final class MyStrategy implements Strategy {
 
 
             if (true) {
-
-
                 scheduleSelectAll(myGroup);
                 schedulePotentialMoveToPoint(myGroup);
             }
@@ -162,47 +159,61 @@ public final class MyStrategy implements Strategy {
         for (FacilityWrapper fw : values) {
             if (fw.shouldSetProduction()) {
                 fw.isProductionSet = true;
-                delayedMoves.add(m -> {
-                    //TODO create other types of vehicles
-                    m.setAction(ActionType.SETUP_VEHICLE_PRODUCTION);
-                    m.setFacilityId(fw.f.getId());
-                    VehicleType type = null;
-                    //type = setupVehiclesByFacilityId.get(fw.f.getId());
-                    //noinspection ConstantConditions
-                    if (type == null) {
-                        if (enemyGroups.isEmpty()) {
-                            type = IFV; //very strange
-                            log(WARN + " empty enemy groups!");
-                        } else {
-                            VehicleGroupInfo max = Collections.max(enemyGroups, Comparator.comparingInt(o -> o.count));
-                            //TODO look at our groups
-                            //TODO carefull pick! look for near by enemies like fighters
-                            switch (max.vehicleType) {
-                                case TANK:
-                                case ARRV:
-                                    type = HELICOPTER;
-                                    break;
-                                case FIGHTER:
-                                    type = Math.random() < 0.34 ? FIGHTER : IFV;
-                                    break;
-                                case HELICOPTER:
-                                    type = FIGHTER;
-                                    break;
-                                case IFV:
-                                    type = TANK;
-                                    break;
-                            }
-                        }
-                        setupVehiclesByFacilityId.put(fw.f.getId(), type);
-                    }
-                    m.setVehicleType(type);
-
-                });
+                setupProduction(fw);
                 return true;
             }
         }
 
         return false;
+    }
+
+    private void setupProduction(FacilityWrapper fw) {
+        if (!fw.isMy()) {
+            log(fw.f.getId() +  " is no more captured");
+            return;
+        }
+        delayedMoves.add(m -> {
+            //TODO create other types of vehicles
+            m.setAction(ActionType.SETUP_VEHICLE_PRODUCTION);
+            m.setFacilityId(fw.f.getId());
+            VehicleType type = getTypeForProductionByContraForEnemy();
+
+            if (type == fw.productType) {
+                m.setAction(ActionType.NONE);
+                return;
+            }
+            fw.productType = type;
+            m.setVehicleType(type);
+
+        });
+    }
+
+    private VehicleType getTypeForProductionByContraForEnemy() {
+        VehicleType type = null;
+        if (enemyGroups.isEmpty()) {
+            type = IFV; //very strange
+            log(WARN + " empty enemy groups!");
+        } else {
+            VehicleGroupInfo max = Collections.max(enemyGroups, Comparator.comparingInt(o -> o.count));
+            //TODO look at our groups
+            //TODO carefull pick! look for near by enemies like fighters
+            switch (max.vehicleType) {
+                case TANK:
+                case ARRV:
+                    type = HELICOPTER;
+                    break;
+                case FIGHTER:
+                    type = Math.random() < 0.34 ? FIGHTER : IFV;
+                    break;
+                case HELICOPTER:
+                    type = FIGHTER;
+                    break;
+                case IFV:
+                    type = TANK;
+                    break;
+            }
+        }
+        return type;
     }
 
     private PlainArray calcMap(VehicleGroupInfo group) { //TODO improve logic at final stages
@@ -1281,10 +1292,13 @@ public final class MyStrategy implements Strategy {
             }
         }
 
-        for (VehicleGroupInfo groupsCandidate : groupsCandidates) {
-            if (groupsCandidate.vehicles.size() > FACILITY_SIZE_TO_GO) {
-                refreshGroup(groupsCandidate);
-                groups.add(0, groupsCandidate);
+        for (VehicleGroupInfo gc : groupsCandidates) {
+            FacilityWrapper fw = um.facilityById.get(gc.facilityId);
+            if (gc.vehicles.size() > FACILITY_SIZE_TO_GO || !fw.isMy()) {
+                refreshGroup(gc);
+                groups.add(0, gc);
+                setupProduction(fw);
+
             }
         }
     }
