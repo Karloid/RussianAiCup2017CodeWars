@@ -18,6 +18,8 @@ public final class MyStrategy implements Strategy {
     private static final String SPECIAL_TASK = "SPECIAL_TASK";
     private static final String WARN = "WARN";
     private static final boolean HELICS_WAIT_FOR_FIGHTES = true;
+    public static final int CAN_DISABLE_FEAR_SINCE_TICK = 9300;
+    public static final int CAN_DISABLE_FEAR_SINCE_COUNT = 490;
     private static int constantId;
 
     private MyStrategyPainter painter = new EmptyPaintner();
@@ -217,6 +219,8 @@ public final class MyStrategy implements Strategy {
         boolean heliShouldHeal = shouldHeal(HELICOPTER);
         boolean fighterShouldHeal = shouldHeal(FIGHTER);
 
+        boolean disableFear = world.getTickIndex() >= CAN_DISABLE_FEAR_SINCE_TICK && um.getUnitCount(Ownership.ALLY) > CAN_DISABLE_FEAR_SINCE_COUNT;
+
         //TODO add negative potential for corners and sides
 
 
@@ -324,10 +328,13 @@ public final class MyStrategy implements Strategy {
                 addToArray(plainArray, enemyIfv, range, .1f);
                 addToArray(plainArray, enemyHelics, range, .3f);
 
-                subFromArray(plainArray, enemyIfv, (game.getHelicopterAerialAttackRange() + 30) / cellSize, 3.2f);
-                subFromArray(plainArray, enemyHelics, (game.getIfvAerialAttackRange() + 10) / cellSize, 1.4f);
+                if (!disableFear) {
+                    subFromArray(plainArray, enemyIfv, (game.getHelicopterAerialAttackRange() + 30) / cellSize, 3.2f);
+                    subFromArray(plainArray, enemyHelics, (game.getIfvAerialAttackRange() + 10) / cellSize, 1.4f);
 
-                if (HELICS_WAIT_FOR_FIGHTES) {
+                }
+
+                if (!disableFear && HELICS_WAIT_FOR_FIGHTES) {
                     VehicleGroupInfo myFighters = findGroup(myGroups, FIGHTER);
                     if (myFighters != null && myFighters.count > 30) {
                         double smallestDistance = Double.MAX_VALUE;
@@ -353,7 +360,7 @@ public final class MyStrategy implements Strategy {
 
                 int factor = 6;
 
-                if (!fighters.isEmpty()) {
+                if (!disableFear && !fighters.isEmpty()) {
                     subFromArray(plainArray, fighters, range, factor);
                 }
 
@@ -398,8 +405,11 @@ public final class MyStrategy implements Strategy {
                 addToArray(plainArray, enemyIfv, range, .4f);
                 addToArray(plainArray, enemyTank, range, .1f);
 
-                subFromArray(plainArray, enemyIfv, (game.getIfvGroundAttackRange() + 20) / cellSize, .3f);
-                subFromArray(plainArray, enemyTank, (game.getTankGroundAttackRange() * 4.5) / cellSize, 3.2f);
+                if (!disableFear) {
+                    subFromArray(plainArray, enemyIfv, (game.getIfvGroundAttackRange() + 20) / cellSize, .3f);
+                    subFromArray(plainArray, enemyTank, (game.getTankGroundAttackRange() * 4.5) / cellSize, 3.2f);
+                }
+
             }
 
             {
@@ -447,8 +457,11 @@ public final class MyStrategy implements Strategy {
                 addToArray(plainArray, getUnitsCount(true).get(FIGHTER).entrySet(), range, .4f);
 
                 //keep away from secondary targets
-                subFromArray(plainArray, helics, (game.getHelicopterGroundAttackRange() * 3) / cellSize, 4.5f);
+                if (!disableFear) {
+                    subFromArray(plainArray, helics, (game.getHelicopterGroundAttackRange() * 3) / cellSize, 4.5f);
+                }
                 subFromArray(plainArray, fighters, (GROUP_SIZE) / cellSize, .4f);
+
             }
 
             {   // my units as obstacle
@@ -1207,7 +1220,7 @@ public final class MyStrategy implements Strategy {
         Collection<VehicleWrapper> freeUnits = um.vehicleById.values().stream()
                 .filter(vehicleWrapper -> {
 
-                    if (vehicleWrapper.isEnemy ) {
+                    if (vehicleWrapper.isEnemy) {
                         return false;
                     }
 

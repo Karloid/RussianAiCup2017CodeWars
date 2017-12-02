@@ -138,4 +138,26 @@ public class UnitManager {
                 .mapToInt(v -> mys.world.getTickIndex() - v.movedAt)
                 .min().orElse(0);
     }
+
+    public int getUnitCount(Ownership ownership) {
+        int count = 0;
+        for (VehicleWrapper vw : vehicleById.values()) {
+            switch (ownership) {
+                case ANY:
+                    count++;
+                    break;
+                case ALLY:
+                    if (!vw.isEnemy) {
+                        count++;
+                    }
+                    break;
+                case ENEMY:
+                    if (vw.isEnemy) {
+                        count++;
+                    }
+                    break;
+            }
+        }
+        return count;
+    }
 }
