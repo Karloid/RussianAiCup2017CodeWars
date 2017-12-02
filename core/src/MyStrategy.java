@@ -70,6 +70,9 @@ public final class MyStrategy implements Strategy {
     private Map<Long, Map<FacilityType, Map<Point2D, Integer>>> facilitiesCount;
     private final int FACILITY_SIZE_TO_GO = 30;
     private VehicleGroupInfo currentMapGroup;
+    private Map<Point2D, Integer> cornersPushers;
+    private Map<Point2D, Integer> sidesPushers;
+    private Map<Point2D, Integer> allFacCounts;
 
 
     @Override
@@ -169,7 +172,7 @@ public final class MyStrategy implements Strategy {
 
     private void setupProduction(FacilityWrapper fw) {
         if (!fw.isMy()) {
-            log(fw.f.getId() +  " is no more captured");
+            log(fw.f.getId() + " is no more captured");
             return;
         }
         delayedMoves.add(m -> {
@@ -190,16 +193,21 @@ public final class MyStrategy implements Strategy {
 
     private VehicleType getTypeForProductionByContraForEnemy() {
         VehicleType type = null;
-        if (enemyGroups.isEmpty()) {
+        ArrayList<VehicleGroupInfo> filtered = new ArrayList<>(enemyGroups);
+        filtered.removeIf(vehicleGroupInfo -> vehicleGroupInfo.vehicleType == ARRV);
+        if (filtered.isEmpty()) {
             type = IFV; //very strange
             log(WARN + " empty enemy groups!");
         } else {
-            VehicleGroupInfo max = Collections.max(enemyGroups, Comparator.comparingInt(o -> o.count));
+
+            VehicleGroupInfo max = Collections.max(filtered, Comparator.comparingInt(o -> o.count));
             //TODO look at our groups
             //TODO carefull pick! look for near by enemies like fighters
             switch (max.vehicleType) {
-                case TANK:
                 case ARRV:
+                    type = IFV;
+                    break;
+                case TANK:
                     type = HELICOPTER;
                     break;
                 case FIGHTER:
@@ -574,25 +582,62 @@ public final class MyStrategy implements Strategy {
         }
 
         { //add negative to corners
-            Map<Point2D, Integer> corners = new HashMap<>();
+            int maxDistanceSquare = 8 * 8;
+
             int maxIndex = plainArray.cellsWidth - 1;
-            corners.put(new Point2D(0, 0), 1);
-            corners.put(new Point2D(0, maxIndex), 1);
-            corners.put(new Point2D(maxIndex, 0), 1);
-            corners.put(new Point2D(maxIndex, maxIndex), 1);
-            subFromArray(plainArray, corners.entrySet(), 3 * 4, 3, -1);
 
-            Map<Point2D, Integer> sides = new HashMap<>();
-            int[] coordinates = {0, maxIndex};
-            for (int i = 0; i < plainArray.cellsWidth; i++) {
-                sides.put(new Point2D(i, 0), 1);
-                sides.put(new Point2D(i, maxIndex), 1);
-                sides.put(new Point2D(0, i), 1);
-                sides.put(new Point2D(maxIndex, i), 1);
-
+            if (allFacCounts == null) {
+                allFacCounts = new HashMap<>();
+                for (Map<FacilityType, Map<Point2D, Integer>> map : getFacilitiesCount().values()) {
+                    for (Map<Point2D, Integer> counts : map.values()) {
+                        allFacCounts.putAll(counts);
+                    }
+                }
             }
 
-            subFromArray(plainArray, sides.entrySet(), 3 * 3, 1, -1);
+            if (cornersPushers == null) {
+                cornersPushers = new HashMap<>();
+
+                cornersPushers.put(new Point2D(0, 0), 1);
+                cornersPushers.put(new Point2D(0, maxIndex), 1);
+                cornersPushers.put(new Point2D(maxIndex, 0), 1);
+                cornersPushers.put(new Point2D(maxIndex, maxIndex), 1);
+
+
+                cornersPushers.keySet().removeIf(corner -> {
+                    for (Point2D facPoint : allFacCounts.keySet()) {
+                        if (facPoint.squareDistance(corner) < 13 * 13) {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+
+            }
+            subFromArray(plainArray, cornersPushers.entrySet(), 3 * 4, 3, -1);
+
+            if (sidesPushers == null) {
+                sidesPushers = new HashMap<>();
+                int[] coordinates = {0, maxIndex};
+                for (int i = 0; i < plainArray.cellsWidth; i++) {
+                    sidesPushers.put(new Point2D(i, 0), 1);
+                    sidesPushers.put(new Point2D(i, maxIndex), 1);
+                    sidesPushers.put(new Point2D(0, i), 1);
+                    sidesPushers.put(new Point2D(maxIndex, i), 1);
+
+                }
+
+                sidesPushers.keySet().removeIf(side -> {
+                    for (Point2D facPoint : allFacCounts.keySet()) {
+                        if (facPoint.squareDistance(side) < maxDistanceSquare) {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+            }
+
+            subFromArray(plainArray, sidesPushers.entrySet(), 3 * 3, 1, -1);
         }
 
 
