@@ -199,6 +199,35 @@ public final class MyStrategy implements Strategy {
             type = IFV; //very strange
             log(WARN + " empty enemy groups!");
         } else {
+            ArrayList<VehicleGroupInfo> filteredTwo = new ArrayList<>(filtered);
+
+            filteredTwo.removeIf(veh -> {
+                for (FacilityWrapper fw : um.facilityById.values()) {
+                    if (fw.isMy()) {
+                        if (fw.productType == IFV && (veh.vehicleType == FIGHTER)) {
+                            return true;
+                        }
+
+                        if (fw.productType == FIGHTER && veh.vehicleType == FIGHTER) {
+                            return true;
+                        }
+
+                        if (fw.productType == TANK && veh.vehicleType == IFV) {
+                            return true;
+                        }
+
+                        if (fw.productType == HELICOPTER && veh.vehicleType == TANK) {
+                            return true;
+                        }
+
+                    }
+                }
+                return false;
+            });
+
+            if (!filteredTwo.isEmpty()) {
+                filtered = filteredTwo;
+            }
 
             VehicleGroupInfo max = Collections.max(filtered, Comparator.comparingInt(o -> o.count));
             //TODO look at our groups
@@ -882,7 +911,7 @@ public final class MyStrategy implements Strategy {
             worldHeight = (int) world.getHeight();
             centerPoint = new Point2D(worldWidth / 2, worldHeight / 2);
 
-            enemyGroups = getGroups(Ownership.ENEMY);
+            enemyGroups = getGroupsWithoutGeometry(Ownership.ENEMY);
             myGroups = getGroups(Ownership.ALLY);
 
             painter.onInitializeStrategy();
@@ -1227,6 +1256,7 @@ public final class MyStrategy implements Strategy {
             ArrayList<VehicleGroupInfo> groups = new ArrayList<>();
             groups.add(myGroup);
             refreshGroups(groups, false);
+            enemyGroups  = getGroupsWithoutGeometry(Ownership.ENEMY);;
 
             if (groups.isEmpty()) {
                 log(WARN + "group " + myGroup + " is destroyed");
@@ -1379,25 +1409,38 @@ public final class MyStrategy implements Strategy {
         List<VehicleGroupInfo> groups = new ArrayList<>();
 
         for (VehicleType vehicleType : VehicleType.values()) {
-            VehicleGroupInfo info = getGroup(ownership, vehicleType);
-            if (info.count > 0) {
-                groups.add(info);
+            VehicleGroupInfo info1 = new VehicleGroupInfo(ownership, vehicleType, this);
+            info1.pointsInfo = um.streamVehicles(ownership, vehicleType)
+                    .map(vehicle -> {
+                        info1.count++;
+                        info1.vehicles.add(vehicle); //TODO optimize
+                        return new Point2D(vehicle.v.getX(), vehicle.v.getY());
+                    })
+                    .collect(Utils.POINT_COLLECTOR);
+
+            if (info1.count > 0) {
+                groups.add(info1);
             }
         }
         return groups;
     }
 
-    private VehicleGroupInfo getGroup(Ownership ownership, VehicleType vehicleType) {
-        VehicleGroupInfo info = new VehicleGroupInfo(ownership, vehicleType, this);
-        PointsInfo pointsInfo = um.streamVehicles(ownership, vehicleType)
-                .map(vehicle -> {
-                    info.count++;
-                    info.vehicles.add(vehicle); //TODO optimize
-                    return new Point2D(vehicle.v.getX(), vehicle.v.getY());
-                })
-                .collect(Utils.POINT_COLLECTOR);
-        info.pointsInfo = pointsInfo;
-        return info;
+    private List<VehicleGroupInfo> getGroupsWithoutGeometry(Ownership ownership) {
+        List<VehicleGroupInfo> groups = new ArrayList<>();
+
+        for (VehicleType vehicleType : VehicleType.values()) {
+            VehicleGroupInfo info1 = new VehicleGroupInfo(ownership, vehicleType, this);
+            um.streamVehicles(ownership, vehicleType)
+                    .forEach(vehicle -> {
+                        info1.count++;
+                        info1.vehicles.add(vehicle);
+                    });
+
+            if (info1.count > 0) {
+                groups.add(info1);
+            }
+        }
+        return groups;
     }
 
     /**
