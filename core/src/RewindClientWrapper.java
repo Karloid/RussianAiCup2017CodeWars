@@ -14,6 +14,9 @@ public class RewindClientWrapper implements MyStrategyPainter {
     public static final Color COLOR_NUCLEAR = new Color(0, 255, 0, 100);
     private static final Color COLOR_NUCLEAR_VEH_VISION = new Color(180, 183, 76, 147);
     public static final int LAYER_GENERIC = 4;
+
+    private static final boolean RESTRICTED_PP_DRAW = true;
+
     private MyStrategy mys;
     private RewindClient rc;
     private boolean didDrawPP;
@@ -175,6 +178,9 @@ public class RewindClientWrapper implements MyStrategyPainter {
 
         double root = root(delta, delta);
 
+        double squareMaxDistance = Math.pow(cellSize * (MyStrategy.MAX_CELL_DISTANCE_OF_MOVE + 3), 2);
+
+
         for (int x = 0; x < cellsX; x++) {
             for (int y = 0; y < cellsY; y++) {
                 double v = plainArray.get(x, y) - min;
@@ -182,7 +188,17 @@ public class RewindClientWrapper implements MyStrategyPainter {
                 int alpha = (int) (((Math.pow(root, v)) / delta) * 220);
                 //int alpha = (int) ((v / delta) * 220);
                 if (alpha > 0) {
-                    rc.rect(x * cellSize, y * cellSize, x * cellSize + cellSize, y * cellSize + cellSize, new Color(133, alpha, 255 - alpha, 100), 1);
+                    int realX = x * cellSize;
+                    int realY = y * cellSize;
+                    int centerX = realX + cellSize / 2;
+                    int centerY = realY + cellSize / 2;
+
+                    if (RESTRICTED_PP_DRAW && myGroup.getAveragePoint().squareDistance(centerX, centerY) > squareMaxDistance) {
+                        continue; // too far for decide
+                    }
+
+                    rc.rect(realX, realY, realX + cellSize, realY + cellSize, new Color(133, alpha, 255 - alpha, 100), 1);
+
                 }
             }
         }

@@ -21,6 +21,7 @@ public final class MyStrategy implements Strategy {
     private static final boolean HELICS_WAIT_FOR_FIGHTES = true;
     public static final int CAN_DISABLE_FEAR_SINCE_TICK = 9300;
     public static final int CAN_DISABLE_FEAR_SINCE_COUNT = 490;
+    public static final int MAX_CELL_DISTANCE_OF_MOVE = 11 / 2;
     private static int constantId;
 
     private MyStrategyPainter painter = new EmptyPaintner();
@@ -1370,7 +1371,7 @@ public final class MyStrategy implements Strategy {
             int myY = averagePoint.getIntY();
 
             Point2D bestChoice = null;
-            int half = 11 / 2;
+            int half = MAX_CELL_DISTANCE_OF_MOVE;
             if (myGroup.vehicleType == TANK || myGroup.vehicleType == IFV) {
                 half--;
             }
