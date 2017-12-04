@@ -4,7 +4,8 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static model.FacilityType.*;
+import static model.FacilityType.CONTROL_CENTER;
+import static model.FacilityType.VEHICLE_FACTORY;
 import static model.VehicleType.*;
 
 @SuppressWarnings({"UnsecureRandomNumberGeneration", "FieldCanBeLocal", "unused", "OverlyLongMethod"})
@@ -180,7 +181,10 @@ public final class MyStrategy implements Strategy {
             //TODO create other types of vehicles
             m.setAction(ActionType.SETUP_VEHICLE_PRODUCTION);
             m.setFacilityId(fw.f.getId());
-            VehicleType type = getTypeForProductionByContraForEnemy();
+            VehicleType type = getTypeForProductionByLess();
+            if (type == null) {
+                type = getTypeForProductionByContraForEnemy();
+            }
 
             if (type == fw.productType) {
                 m.setAction(ActionType.NONE);
@@ -190,6 +194,21 @@ public final class MyStrategy implements Strategy {
             m.setVehicleType(type);
 
         });
+    }
+
+    private VehicleType getTypeForProductionByLess() {
+        Map<VehicleType, Long> allyCounts = um.streamVehicles(Ownership.ALLY)
+                .collect(Collectors.groupingBy(o -> o.v.getType(), Collectors.counting()));
+
+        for (VehicleType vehicleType : VehicleType.values()) {
+            allyCounts.putIfAbsent(vehicleType, 0L);
+        }
+        Map.Entry<VehicleType, Long> min = Collections.min(allyCounts.entrySet(), Comparator.comparingLong(Map.Entry::getValue));
+        if (min.getValue() < FACILITY_SIZE_TO_GO) {
+            return min.getKey();
+        }
+
+        return null;
     }
 
     private VehicleType getTypeForProductionByContraForEnemy() {
