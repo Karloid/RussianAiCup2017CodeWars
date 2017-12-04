@@ -69,7 +69,7 @@ public final class MyStrategy implements Strategy {
     private Map<VehicleType, Map<Point2D, Integer>> enemyUnitsCount;
 
     private Map<Long, Map<FacilityType, Map<Point2D, Integer>>> facilitiesCount;
-    private final int FACILITY_SIZE_TO_GO = 30; //TODO 25
+    private final int FACILITY_SIZE_TO_GO = 25;
     private VehicleGroupInfo currentMapGroup;
     private Map<Point2D, Integer> cornersPushers;
     private Map<Point2D, Integer> sidesPushers;
@@ -694,7 +694,7 @@ public final class MyStrategy implements Strategy {
     private void addToArrayNotOurFacilities(PlainArray plainArray, double range, float factor) {
         //TODO ignore facility if some other ally group is nearby !!
         //TODO stay still when capturing
-        float enemyFactor = 1.04f;
+        float enemyFactor = 1f;
         float controlCenterFactor = 1;
 
         Map<Long, Map<FacilityType, Map<Point2D, Integer>>> fc = getFacilitiesCount();
@@ -1205,7 +1205,20 @@ public final class MyStrategy implements Strategy {
 
         for (VehicleGroupInfo gc : groupsCandidates) {
             FacilityWrapper fw = um.facilityById.get(gc.facilityId);
-            if (gc.vehicles.size() > FACILITY_SIZE_TO_GO || !fw.isMy()) {
+            int sizeToGo = FACILITY_SIZE_TO_GO;
+            switch (gc.vehicleType) {
+                case ARRV:
+                    sizeToGo = 10;
+                    break;
+                case FIGHTER:
+                    sizeToGo = 15;
+                    break;
+                case HELICOPTER:
+                case IFV:
+                case TANK:
+                    break;
+            }
+            if (gc.vehicles.size() > sizeToGo || !fw.isMy()) {
                 refreshGroup(gc);
                 groups.add(0, gc);
                 setupProduction(fw);
