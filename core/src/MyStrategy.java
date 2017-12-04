@@ -68,11 +68,12 @@ public final class MyStrategy implements Strategy {
     private Map<VehicleType, Map<Point2D, Integer>> enemyUnitsCount;
 
     private Map<Long, Map<FacilityType, Map<Point2D, Integer>>> facilitiesCount;
-    private final int FACILITY_SIZE_TO_GO = 30;
+    private final int FACILITY_SIZE_TO_GO = 30; //TODO 25
     private VehicleGroupInfo currentMapGroup;
     private Map<Point2D, Integer> cornersPushers;
     private Map<Point2D, Integer> sidesPushers;
     private Map<Point2D, Integer> allFacCounts;
+    private boolean isFacilityMode;
 
 
     @Override
@@ -269,12 +270,10 @@ public final class MyStrategy implements Strategy {
         boolean heliShouldHeal = shouldHeal(HELICOPTER);
         boolean fighterShouldHeal = shouldHeal(FIGHTER);
 
-        boolean disableFear = world.getTickIndex() >= CAN_DISABLE_FEAR_SINCE_TICK && um.getUnitCount(Ownership.ALLY) > CAN_DISABLE_FEAR_SINCE_COUNT;
+        boolean disableFear = isFacilityMode && world.getTickIndex() >= CAN_DISABLE_FEAR_SINCE_TICK && um.getUnitCount(Ownership.ALLY) > CAN_DISABLE_FEAR_SINCE_COUNT;
 
 
-        int minValForContra = group.count > 12 ? 3 : -1;
-
-        //TODO add negative potential for corners and sides
+        int minValForContra = group.count > 12 && isFacilityMode ? 3 : -1;  //TODO disable when no facilities
 
 
         if (group.vehicleType == FIGHTER) {
@@ -449,7 +448,7 @@ public final class MyStrategy implements Strategy {
                 addToArray(plainArray, getUnitsCount(true).get(ARRV).entrySet(), range, 0.82f);
 
 
-                addToArrayNotOurFacilities(plainArray, range, .82f);
+                addToArrayNotOurFacilities(plainArray, range, .88f);
 
 
                 Set<Map.Entry<Point2D, Integer>> enemyTank = getUnitsCount(true).get(TANK).entrySet();
@@ -499,7 +498,7 @@ public final class MyStrategy implements Strategy {
                 addToArray(plainArray, getUnitsCount(true).get(TANK).entrySet(), range, .9f);
                 addToArray(plainArray, getUnitsCount(true).get(ARRV).entrySet(), range, 0.8f);
 
-                addToArrayNotOurFacilities(plainArray, range, .7f);
+                addToArrayNotOurFacilities(plainArray, range, .88f);
 
 
                 //secondary targets
@@ -568,7 +567,7 @@ public final class MyStrategy implements Strategy {
                 addToArray(plainArray, tanks, range, .3f);
                 addToArray(plainArray, ifvs, range, .3f);
 
-                addToArrayNotOurFacilities(plainArray, range, .7f);
+                addToArrayNotOurFacilities(plainArray, range, .95f);
 
                 //TODO chase enemies
 
@@ -674,7 +673,8 @@ public final class MyStrategy implements Strategy {
     }
 
     private void addToArrayNotOurFacilities(PlainArray plainArray, double range, float factor) {
-        //TODO ignore facility if some other ally group is nearby
+        //TODO ignore facility if some other ally group is nearby !!
+        //TODO stay still when capturing
         float enemyFactor = 1.04f;
         float controlCenterFactor = 1;
 
@@ -915,6 +915,7 @@ public final class MyStrategy implements Strategy {
             myGroups = getGroups(Ownership.ALLY);
 
             painter.onInitializeStrategy();
+            isFacilityMode = world.getFacilities().length > 0;
         }
     }
 
@@ -1256,7 +1257,8 @@ public final class MyStrategy implements Strategy {
             ArrayList<VehicleGroupInfo> groups = new ArrayList<>();
             groups.add(myGroup);
             refreshGroups(groups, false);
-            enemyGroups  = getGroupsWithoutGeometry(Ownership.ENEMY);;
+            enemyGroups = getGroupsWithoutGeometry(Ownership.ENEMY);
+            ;
 
             if (groups.isEmpty()) {
                 log(WARN + "group " + myGroup + " is destroyed");
