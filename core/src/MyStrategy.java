@@ -8,6 +8,15 @@ import static model.FacilityType.CONTROL_CENTER;
 import static model.FacilityType.VEHICLE_FACTORY;
 import static model.VehicleType.*;
 
+//TODO repeat game http://russianaicup.ru/game/view/175080 look at stupid moves in top right corners
+
+//TODO dynamic group size
+//..if
+//TODO reuse group numbers
+//TODO group number pool
+
+//TODO с завода 2 ряда танков, 2 ряда хилок, 2 ряда вертолетов
+
 @SuppressWarnings({"UnsecureRandomNumberGeneration", "FieldCanBeLocal", "unused", "OverlyLongMethod"})
 public final class MyStrategy implements Strategy {
     public static final int WORLD_CELL_SIZE = 32;
