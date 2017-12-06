@@ -17,6 +17,10 @@ import static model.VehicleType.*;
 
 //TODO с завода 2 ряда танков, 2 ряда хилок, 2 ряда вертолетов
 
+//TODO делить ARRV на две группы
+
+//TODO если в улугу есть враг то не отталкивать от этого угла
+
 @SuppressWarnings({"UnsecureRandomNumberGeneration", "FieldCanBeLocal", "unused", "OverlyLongMethod"})
 public final class MyStrategy implements Strategy {
     public static final int WORLD_CELL_SIZE = 32;
