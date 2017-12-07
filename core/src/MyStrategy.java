@@ -674,7 +674,43 @@ public final class MyStrategy implements Strategy {
                 });
 
             }
-            subFromArray(plainArray, cornersPushers.entrySet(), 3 * 4, 3, -1);
+
+            HashMap<Point2D, Integer> cornerPushersFiltered = new HashMap<>(cornersPushers);
+
+            cornerPushersFiltered.keySet().removeIf(corner -> {
+                int distanceThreshold = 13 * 13;
+                for (Point2D facPoint : getUnitsCount(true).get(ARRV).keySet()) {
+                    if (facPoint.squareDistance(corner) < distanceThreshold) {
+                        return true;
+                    }
+                }
+
+                for (Point2D facPoint : getUnitsCount(true).get(HELICOPTER).keySet()) {
+                    if (facPoint.squareDistance(corner) < distanceThreshold) {
+                        return true;
+                    }
+                }
+
+                for (Point2D facPoint : getUnitsCount(true).get(FIGHTER).keySet()) {
+                    if (facPoint.squareDistance(corner) < distanceThreshold) {
+                        return true;
+                    }
+                }
+
+                for (Point2D facPoint : getUnitsCount(true).get(TANK).keySet()) {
+                    if (facPoint.squareDistance(corner) < distanceThreshold) {
+                        return true;
+                    }
+                }
+                for (Point2D unit : getUnitsCount(true).get(IFV).keySet()) {
+                    if (unit.squareDistance(corner) < distanceThreshold) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+
+            subFromArray(plainArray, cornerPushersFiltered.entrySet(), 3 * 4, 3, -1);
 
             if (sidesPushers == null) {
                 sidesPushers = new HashMap<>();
