@@ -21,6 +21,10 @@ import static model.VehicleType.*;
 
 //TODO если в улугу есть враг то не отталкивать от этого угла
 
+//TODO repeat game http://russianaicup.ru/game/view/196079 mb 16 facilities
+
+//TODO do not stuck fighters at start fog of war
+
 @SuppressWarnings({"UnsecureRandomNumberGeneration", "FieldCanBeLocal", "unused", "OverlyLongMethod"})
 public final class MyStrategy implements Strategy {
     public static final int WORLD_CELL_SIZE = 32;
