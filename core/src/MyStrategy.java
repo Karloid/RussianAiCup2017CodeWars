@@ -23,8 +23,6 @@ import static model.VehicleType.*;
 
 //TODO repeat game http://russianaicup.ru/game/view/196079 mb 16 facilities
 
-//TODO do not stuck fighters at start fog of war
-
 @SuppressWarnings({"UnsecureRandomNumberGeneration", "FieldCanBeLocal", "unused", "OverlyLongMethod"})
 public final class MyStrategy implements Strategy {
     public static final int WORLD_CELL_SIZE = 32;
@@ -335,12 +333,17 @@ public final class MyStrategy implements Strategy {
                 Set<Map.Entry<Point2D, Integer>> enemyTanks = getUnitsCount(true).get(TANK).entrySet();
                 Set<Map.Entry<Point2D, Integer>> enemyArrvs = getUnitsCount(true).get(ARRV).entrySet();
                 Set<Map.Entry<Point2D, Integer>> enemyIfv = getUnitsCount(true).get(IFV).entrySet();
-                addToArray(plainArray, enemyIfv, range, .1f);
-                addToArray(plainArray, enemyTanks, range, .1f);
-                addToArray(plainArray, enemyArrvs, range, .1f);
 
-                subFromArray(plainArray, enemyTanks, (game.getIfvAerialAttackRange() + 10) / cellSize, 1.4f, -1);
-                subFromArray(plainArray, enemyArrvs, (game.getIfvAerialAttackRange() + 10) / cellSize, 1.4f, -1);
+                if (enemyTanks.isEmpty() && enemyArrvs.isEmpty() && enemyIfv.isEmpty() && figAndHelicsSet.isEmpty()) {
+                    addToArrayNotOurFacilities(plainArray, range, 1);
+                } else {
+                    addToArray(plainArray, enemyIfv, range, .1f);
+                    addToArray(plainArray, enemyTanks, range, .1f);
+                    addToArray(plainArray, enemyArrvs, range, .1f);
+
+                    subFromArray(plainArray, enemyTanks, (game.getIfvAerialAttackRange() + 10) / cellSize, 1.4f, -1);
+                    subFromArray(plainArray, enemyArrvs, (game.getIfvAerialAttackRange() + 10) / cellSize, 1.4f, -1);
+                }
             }
 
 
@@ -405,8 +408,11 @@ public final class MyStrategy implements Strategy {
                 double range = plainArray.cellsWidth * 1.2;
 
                 //addToArray(plainArray, tanksAndArrvSet, range, 1.f);
-                addToArray(plainArray, getUnitsCount(true).get(TANK).entrySet(), range, 1.f);
-                addToArray(plainArray, getUnitsCount(true).get(ARRV).entrySet(), range, 1.f);
+                Set<Map.Entry<Point2D, Integer>> enemyTanks = getUnitsCount(true).get(TANK).entrySet();
+                Set<Map.Entry<Point2D, Integer>> enemyArrvs = getUnitsCount(true).get(ARRV).entrySet();
+
+                addToArray(plainArray, enemyTanks, range, 1.f);
+                addToArray(plainArray, enemyArrvs, range, 1.f);
 
 
                 Set<Map.Entry<Point2D, Integer>> enemyHelics = getUnitsCount(true).get(HELICOPTER).entrySet();
@@ -415,6 +421,10 @@ public final class MyStrategy implements Strategy {
 
                 addToArray(plainArray, enemyIfv, range, .1f);
                 addToArray(plainArray, enemyHelics, range, .3f);
+
+                if (enemyTanks.isEmpty() && enemyArrvs.isEmpty() && enemyIfv.isEmpty() && enemyHelics.isEmpty()) {
+                    addToArrayNotOurFacilities(plainArray, range, 1);
+                }
 
                 if (!disableFear) {
                     subFromArray(plainArray, enemyIfv, (game.getHelicopterAerialAttackRange() + 30) / cellSize, 3.2f, minValForContra);
@@ -1441,13 +1451,15 @@ public final class MyStrategy implements Strategy {
                 move.setVehicleType(groupInfo.vehicleType);
             });
             //TODO fix possible bug when addFirst breaks order
-            delayedMoves.add(move -> {
-                groupInfo.groupNumber = groupNextIndex;
-                groupNextIndex++;
+            if (groupNextIndex != 101) {
+                delayedMoves.add(move -> {
+                    groupInfo.groupNumber = groupNextIndex;
+                    groupNextIndex++;
 
-                move.setAction(ActionType.ASSIGN);
-                move.setGroup(groupInfo.groupNumber);
-            });
+                    move.setAction(ActionType.ASSIGN);
+                    move.setGroup(groupInfo.groupNumber);
+                });
+            }
         } else {
             boolean isAlreadySelected = true;
             List<VehicleWrapper> selectedUnits = um.streamVehicles(Ownership.ALLY).filter(vehicleWrapper -> vehicleWrapper.v.isSelected()).collect(Collectors.toList());
