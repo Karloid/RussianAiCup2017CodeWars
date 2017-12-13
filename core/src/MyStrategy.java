@@ -90,6 +90,7 @@ public final class MyStrategy implements Strategy {
     private Map<Point2D, Integer> sidesPushers;
     private Map<Point2D, Integer> allFacCounts;
     private boolean isFacilityMode;
+    private boolean nextIsTankIfFog = true;
 
 
     @Override
@@ -231,8 +232,11 @@ public final class MyStrategy implements Strategy {
         ArrayList<VehicleGroupInfo> filtered = new ArrayList<>(enemyGroups);
         filtered.removeIf(vehicleGroupInfo -> vehicleGroupInfo.vehicleType == ARRV);
         if (filtered.isEmpty()) {
-            type = IFV; //very strange
-            log(WARN + " empty enemy groups!");
+            type = nextIsTankIfFog ? TANK : IFV;
+
+            nextIsTankIfFog = !nextIsTankIfFog;
+
+            log(WARN + " enemy not visible empty enemy groups!");
         } else {
             ArrayList<VehicleGroupInfo> filteredTwo = new ArrayList<>(filtered);
 
