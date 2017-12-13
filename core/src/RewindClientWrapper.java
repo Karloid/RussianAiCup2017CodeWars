@@ -15,7 +15,7 @@ public class RewindClientWrapper implements MyStrategyPainter {
     private static final Color COLOR_NUCLEAR_VEH_VISION = new Color(180, 183, 76, 147);
     public static final int LAYER_GENERIC = 4;
 
-    private static final boolean RESTRICTED_PP_DRAW = true;
+    private static final boolean RESTRICTED_PP_DRAW = false;
 
     private MyStrategy mys;
     private RewindClient rc;

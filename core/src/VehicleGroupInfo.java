@@ -75,4 +75,9 @@ public class VehicleGroupInfo {
         }
         return sum / (vehicles.size() * myStrategy.getDurability(vehicleType) * 1.f);
     }
+
+    public Point2D getCellAveragePoint() {
+        Point2D averagePoint = getAveragePoint();
+        return new Point2D((int) (averagePoint.getX() / myStrategy.cellSize), (int) (averagePoint.getY() / myStrategy.cellSize));
+    }
 }

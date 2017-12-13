@@ -235,6 +235,9 @@ public final class MyStrategy implements Strategy {
             type = nextIsTankIfFog ? TANK : IFV;
 
             nextIsTankIfFog = !nextIsTankIfFog;
+            //TODO fix if needed
+
+            type = IFV;
 
             log(WARN + " enemy not visible empty enemy groups!");
         } else {
@@ -548,7 +551,12 @@ public final class MyStrategy implements Strategy {
                 addToArray(plainArray, getUnitsCount(true).get(TANK).entrySet(), range, .9f);
                 addToArray(plainArray, getUnitsCount(true).get(ARRV).entrySet(), range, 0.8f);
 
-                addToArrayNotOurFacilities(plainArray, range, .88f);
+
+
+                //if someone closer then my then pass that facility
+                removeFacilityIfSomeoneCloser(group);
+
+                addToArrayNotOurFacilities(plainArray, range, .9f);
 
 
                 //secondary targets
@@ -758,6 +766,41 @@ public final class MyStrategy implements Strategy {
         return plainArray;
     }
 
+    private void removeFacilityIfSomeoneCloser(VehicleGroupInfo group) {
+        Point2D myCellAvgPoint = group.getCellAveragePoint();
+
+        Map<Long, Map<FacilityType, Map<Point2D, Integer>>> fc = getFacilitiesCount();
+        for (Map.Entry<Long, Map<FacilityType, Map<Point2D, Integer>>> longMapEntry : fc.entrySet()) {
+            if (longMapEntry.getKey() != me.getId()) {
+                for (Map.Entry<FacilityType, Map<Point2D, Integer>> entry : longMapEntry.getValue().entrySet()) {
+                    entry.getValue().entrySet()
+                            .removeIf(en1 -> {
+                                for (VehicleGroupInfo myGroup : myGroups) {
+                                    if (myGroup != group && (myGroup.vehicleType == ARRV || myGroup.vehicleType == IFV) && myGroup.getCellAveragePoint()
+                                            .getDistanceTo(en1.getKey()) < myCellAvgPoint.getDistanceTo(en1.getKey())) {
+                                        Point2D point = en1.getKey(); //TODO mb check its is optimal for this group or not
+
+
+                                        return true;
+                                    }
+                                }
+                                return false;
+                            });
+                }
+            }
+        }
+
+
+        int countAfter = fc.get(opponent.getId()).get(CONTROL_CENTER).size() +
+                fc.get(-1L).get(CONTROL_CENTER).size() +
+                fc.get(opponent.getId()).get(VEHICLE_FACTORY).size() +
+                fc.get(-1L).get(VEHICLE_FACTORY).size();
+        if (countAfter == 0) {
+            facilitiesCount = null;
+            log("removeFacilityIfSomeoneCloser reseting count due lack of variants " + group);
+        }
+    }
+
     private void addToArrayNotOurFacilities(PlainArray plainArray, double range, float factor) {
         //TODO ignore facility if some other ally group is nearby !!
         //TODO stay still when capturing
@@ -773,12 +816,14 @@ public final class MyStrategy implements Strategy {
         addToArray(plainArray, fc.get(-1L).get(VEHICLE_FACTORY).entrySet(), range, factor);
 
         range = 1;
+/*
         for (int i = 0; i < 4; i++) {
             addToArray(plainArray, fc.get(opponent.getId()).get(CONTROL_CENTER).entrySet(), range, factor * controlCenterFactor * enemyFactor);
             addToArray(plainArray, fc.get(-1L).get(CONTROL_CENTER).entrySet(), range, factor * controlCenterFactor);
             addToArray(plainArray, fc.get(opponent.getId()).get(VEHICLE_FACTORY).entrySet(), range, factor * enemyFactor);
             addToArray(plainArray, fc.get(-1L).get(VEHICLE_FACTORY).entrySet(), range, factor);
         }
+*/
     }
 
     private boolean shouldHeal(VehicleType ifv) {
@@ -1291,6 +1336,7 @@ public final class MyStrategy implements Strategy {
                 case HELICOPTER:
                 case IFV:
                 case TANK:
+                    sizeToGo = 32;
                     break;
             }
             if (gc.vehicles.size() > sizeToGo || !fw.isMy()) {
