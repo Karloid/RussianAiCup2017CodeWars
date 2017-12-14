@@ -356,13 +356,19 @@ public final class MyStrategy implements Strategy {
                     if (myArrvs.isEmpty()) {
                         addToArrayNotOurFacilities(plainArray, range, 1, group);
                     } else {
-                        HashSet<Map.Entry<Point2D, Integer>> entries = new HashSet<>(myArrvs);
-                        for (Map.Entry<Point2D, Integer> en : entries) {
-                            en.setValue(1);
-                        }
-                        //TODO go to single point
+                        VehicleGroupInfo maxArrvG = myGroups.stream().filter(g -> g.vehicleType == ARRV).max(Comparator.comparingInt(g -> g.vehicles.size())).orElse(null);
 
-                        addToArray(plainArray, myArrvs, range, .1f);
+                        HashSet<Map.Entry<Point2D, Integer>> entries = new HashSet<>();
+                        if (maxArrvG != null) {
+                            entries.add(new AbstractMap.SimpleEntry<>(maxArrvG.getCellAveragePoint(), 1));
+                        } else {
+                            entries.addAll(myArrvs);
+                            for (Map.Entry<Point2D, Integer> en : entries) {
+                                en.setValue(1);
+                            }
+                        }
+                        addToArray(plainArray, entries, range, .1f);
+
                     }
 
                 } else {
@@ -451,12 +457,18 @@ public final class MyStrategy implements Strategy {
                     if (myIfvs.isEmpty()) {
                         addToArrayNotOurFacilities(plainArray, range, 1, group);
                     } else {
-                        HashSet<Map.Entry<Point2D, Integer>> entries = new HashSet<>(myIfvs);
-                        for (Map.Entry<Point2D, Integer> en : entries) {
-                            en.setValue(1);
+                        VehicleGroupInfo maxIfvG = myGroups.stream().filter(g -> g.vehicleType == IFV).max(Comparator.comparingInt(g -> g.vehicles.size())).orElse(null);
+
+                        HashSet<Map.Entry<Point2D, Integer>> entries = new HashSet<>();
+                        if (maxIfvG != null) {
+                            entries.add(new AbstractMap.SimpleEntry<>(maxIfvG.getCellAveragePoint(), 1));
+                        } else {
+                            entries.addAll(myIfvs);
+                            for (Map.Entry<Point2D, Integer> en : entries) {
+                                en.setValue(1);
+                            }
                         }
-                        //TODO go to single point
-                        addToArray(plainArray, myIfvs, range, .1f);
+                        addToArray(plainArray, entries, range, .1f);
                     }
                 }
 
@@ -873,7 +885,7 @@ public final class MyStrategy implements Strategy {
             addToArray(plainArray, fc.get(-1L).get(VEHICLE_FACTORY).entrySet(), range, factor);
         } else {
             HashSet<Map.Entry<Point2D, Integer>> counts = new HashSet<>();
-            counts.add(new AbstractMap.SimpleEntry<Point2D, Integer>(group.goToFacility.getCenterCellPos(), 1));
+            counts.add(new AbstractMap.SimpleEntry<>(group.goToFacility.getCenterCellPos(), 1));
             addToArray(plainArray, counts, range, factor);
         }
     }
