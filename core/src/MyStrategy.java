@@ -91,6 +91,7 @@ public final class MyStrategy implements Strategy {
     private Map<Point2D, Integer> allFacCounts;
     private boolean isFacilityMode;
     private boolean nextIsTankIfFog = true;
+    private boolean allEnInvisible;
 
 
     @Override
@@ -317,6 +318,16 @@ public final class MyStrategy implements Strategy {
         int minValForContra = group.count > 12 && isFacilityMode ? 3 : -1;  //TODO disable when no facilities
 
 
+        Set<Map.Entry<Point2D, Integer>> enemyTanks = getUnitsCount(true).get(TANK).entrySet();
+        Set<Map.Entry<Point2D, Integer>> enemyArrvs = getUnitsCount(true).get(ARRV).entrySet();
+        Set<Map.Entry<Point2D, Integer>> enemyIfv = getUnitsCount(true).get(IFV).entrySet();
+
+        Set<Map.Entry<Point2D, Integer>> enemyHelics = getUnitsCount(true).get(HELICOPTER).entrySet();
+        Set<Map.Entry<Point2D, Integer>> enemyFighters = getUnitsCount(true).get(FIGHTER).entrySet();
+
+        allEnInvisible = enemyTanks.isEmpty() && enemyArrvs.isEmpty() && enemyIfv.isEmpty() && enemyHelics.isEmpty() && enemyFighters.isEmpty();
+
+
         if (group.vehicleType == FIGHTER) {
 
             Map<Point2D, Integer> fighterAndHelics = new HashMap<>(getUnitsCount(true).get(FIGHTER));
@@ -337,23 +348,20 @@ public final class MyStrategy implements Strategy {
                 addToArray(plainArray, figAndHelicsSet, range, 1.f);
 
 
-                Set<Map.Entry<Point2D, Integer>> enemyTanks = getUnitsCount(true).get(TANK).entrySet();
-                Set<Map.Entry<Point2D, Integer>> enemyArrvs = getUnitsCount(true).get(ARRV).entrySet();
-                Set<Map.Entry<Point2D, Integer>> enemyIfv = getUnitsCount(true).get(IFV).entrySet();
-
                 if (enemyTanks.isEmpty() && enemyArrvs.isEmpty() && enemyIfv.isEmpty() && figAndHelicsSet.isEmpty()) {
 
                     boolean goToFacilities = true;
 
                     Set<Map.Entry<Point2D, Integer>> myArrvs = getUnitsCount(false).get(ARRV).entrySet();
                     if (myArrvs.isEmpty()) {
-                        addToArrayNotOurFacilities(plainArray, range, 1);
+                        addToArrayNotOurFacilities(plainArray, range, 1, group);
                     } else {
                         HashSet<Map.Entry<Point2D, Integer>> entries = new HashSet<>(myArrvs);
                         for (Map.Entry<Point2D, Integer> en : entries) {
                             en.setValue(1);
                         }
-                        
+                        //TODO go to single point
+
                         addToArray(plainArray, myArrvs, range, .1f);
                     }
 
@@ -429,16 +437,10 @@ public final class MyStrategy implements Strategy {
                 double range = plainArray.cellsWidth * 1.2;
 
                 //addToArray(plainArray, tanksAndArrvSet, range, 1.f);
-                Set<Map.Entry<Point2D, Integer>> enemyTanks = getUnitsCount(true).get(TANK).entrySet();
-                Set<Map.Entry<Point2D, Integer>> enemyArrvs = getUnitsCount(true).get(ARRV).entrySet();
 
                 addToArray(plainArray, enemyTanks, range, 1.f);
                 addToArray(plainArray, enemyArrvs, range, 1.f);
 
-
-                Set<Map.Entry<Point2D, Integer>> enemyHelics = getUnitsCount(true).get(HELICOPTER).entrySet();
-                Set<Map.Entry<Point2D, Integer>> enemyIfv = getUnitsCount(true).get(IFV).entrySet();
-                Set<Map.Entry<Point2D, Integer>> enemyFighters = getUnitsCount(true).get(FIGHTER).entrySet();
 
                 addToArray(plainArray, enemyIfv, range, .1f);
                 addToArray(plainArray, enemyHelics, range, .3f);
@@ -447,13 +449,13 @@ public final class MyStrategy implements Strategy {
 
                     Set<Map.Entry<Point2D, Integer>> myIfvs = getUnitsCount(false).get(IFV).entrySet();
                     if (myIfvs.isEmpty()) {
-                        addToArrayNotOurFacilities(plainArray, range, 1);
+                        addToArrayNotOurFacilities(plainArray, range, 1, group);
                     } else {
                         HashSet<Map.Entry<Point2D, Integer>> entries = new HashSet<>(myIfvs);
                         for (Map.Entry<Point2D, Integer> en : entries) {
                             en.setValue(1);
                         }
-
+                        //TODO go to single point
                         addToArray(plainArray, myIfvs, range, .1f);
                     }
                 }
@@ -526,18 +528,15 @@ public final class MyStrategy implements Strategy {
                 addToArray(plainArray, getUnitsCount(true).get(ARRV).entrySet(), range, 0.82f);
 
 
-                addToArrayNotOurFacilities(plainArray, range, .88f);
+                addToArrayNotOurFacilities(plainArray, range, .88f, group);
 
-
-                Set<Map.Entry<Point2D, Integer>> enemyTank = getUnitsCount(true).get(TANK).entrySet();
-                Set<Map.Entry<Point2D, Integer>> enemyIfv = getUnitsCount(true).get(IFV).entrySet();
 
                 addToArray(plainArray, enemyIfv, range, .4f);
-                addToArray(plainArray, enemyTank, range, .1f);
+                addToArray(plainArray, enemyTanks, range, .1f);
 
                 if (!disableFear) {
                     subFromArray(plainArray, enemyIfv, (game.getIfvGroundAttackRange() + 20) / cellSize, .3f, minValForContra);
-                    subFromArray(plainArray, enemyTank, (game.getTankGroundAttackRange() * 4.5) / cellSize, 3.2f, minValForContra);
+                    subFromArray(plainArray, enemyTanks, (game.getTankGroundAttackRange() * 4.5) / cellSize, 3.2f, minValForContra);
                 }
 
             }
@@ -580,7 +579,7 @@ public final class MyStrategy implements Strategy {
                 //if someone closer then my then pass that facility
                 removeFacilityIfSomeoneCloser(group);
 
-                addToArrayNotOurFacilities(plainArray, range, .9f);
+                addToArrayNotOurFacilities(plainArray, range, .9f, group);
 
 
                 //secondary targets
@@ -649,7 +648,7 @@ public final class MyStrategy implements Strategy {
                 addToArray(plainArray, tanks, range, .3f);
                 addToArray(plainArray, ifvs, range, .3f);
 
-                addToArrayNotOurFacilities(plainArray, range, .95f);
+                addToArrayNotOurFacilities(plainArray, range, .95f, group);
 
                 //TODO chase enemies
 
@@ -825,7 +824,7 @@ public final class MyStrategy implements Strategy {
         }
     }
 
-    private void addToArrayNotOurFacilities(PlainArray plainArray, double range, float factor) {
+    private void addToArrayNotOurFacilities(PlainArray plainArray, double range, float factor, VehicleGroupInfo group) {
         //TODO ignore facility if some other ally group is nearby !!
         //TODO stay still when capturing
         float enemyFactor = 1f;
@@ -833,21 +832,50 @@ public final class MyStrategy implements Strategy {
 
         Map<Long, Map<FacilityType, Map<Point2D, Integer>>> fc = getFacilitiesCount();
 
+        if (group.goToFacility != null && group.goToFacility.isMy()) {
+            group.goToFacility = null;
+        }
 
-        addToArray(plainArray, fc.get(opponent.getId()).get(CONTROL_CENTER).entrySet(), range, factor * controlCenterFactor * enemyFactor);
-        addToArray(plainArray, fc.get(-1L).get(CONTROL_CENTER).entrySet(), range, factor * controlCenterFactor);
-        addToArray(plainArray, fc.get(opponent.getId()).get(VEHICLE_FACTORY).entrySet(), range, factor * enemyFactor);
-        addToArray(plainArray, fc.get(-1L).get(VEHICLE_FACTORY).entrySet(), range, factor);
+        if (group.isAeral() || !allEnInvisible) { // or check how far is enemy
 
-        range = 1;
-/*
-        for (int i = 0; i < 4; i++) {
             addToArray(plainArray, fc.get(opponent.getId()).get(CONTROL_CENTER).entrySet(), range, factor * controlCenterFactor * enemyFactor);
             addToArray(plainArray, fc.get(-1L).get(CONTROL_CENTER).entrySet(), range, factor * controlCenterFactor);
             addToArray(plainArray, fc.get(opponent.getId()).get(VEHICLE_FACTORY).entrySet(), range, factor * enemyFactor);
             addToArray(plainArray, fc.get(-1L).get(VEHICLE_FACTORY).entrySet(), range, factor);
+
+            return;
         }
-*/
+
+
+        if (group.goToFacility == null) {
+            Point2D ap = group.getAveragePoint();
+            FacilityWrapper closestFree = um.facilityById.values().stream().filter(f -> {
+
+                if (f.isMy()) {
+                    return false;
+                }
+                for (VehicleGroupInfo groupInfo : myGroups) {
+                    if (groupInfo != group && groupInfo.goToFacility == f) {
+                        return false;
+                    }
+                }
+                return true;
+            }).min(Comparator.comparingDouble(value -> value.getCenterPos().squareDistance(ap))).orElse(null);
+
+            group.goToFacility = closestFree;
+        }
+
+
+        if (group.goToFacility == null) {
+            addToArray(plainArray, fc.get(opponent.getId()).get(CONTROL_CENTER).entrySet(), range, factor * controlCenterFactor * enemyFactor);
+            addToArray(plainArray, fc.get(-1L).get(CONTROL_CENTER).entrySet(), range, factor * controlCenterFactor);
+            addToArray(plainArray, fc.get(opponent.getId()).get(VEHICLE_FACTORY).entrySet(), range, factor * enemyFactor);
+            addToArray(plainArray, fc.get(-1L).get(VEHICLE_FACTORY).entrySet(), range, factor);
+        } else {
+            HashSet<Map.Entry<Point2D, Integer>> counts = new HashSet<>();
+            counts.add(new AbstractMap.SimpleEntry<Point2D, Integer>(group.goToFacility.getCenterCellPos(), 1));
+            addToArray(plainArray, counts, range, factor);
+        }
     }
 
     private boolean shouldHeal(VehicleType ifv) {

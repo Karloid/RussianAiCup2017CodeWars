@@ -20,6 +20,7 @@ public class VehicleGroupInfo {
     public int groupNumber;
     public PlainArray potentialMap;
     public int potentialMapCalcAt;
+    public FacilityWrapper goToFacility;
 
     public VehicleGroupInfo(Ownership ownership, VehicleType vehicleType, MyStrategy myStrategy) {
         this.ownership = ownership;
@@ -79,5 +80,9 @@ public class VehicleGroupInfo {
     public Point2D getCellAveragePoint() {
         Point2D averagePoint = getAveragePoint();
         return new Point2D((int) (averagePoint.getX() / myStrategy.cellSize), (int) (averagePoint.getY() / myStrategy.cellSize));
+    }
+
+    public boolean isAeral() {
+        return vehicles.get(0).v.isAerial();
     }
 }
