@@ -3,6 +3,7 @@ import model.*;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static model.FacilityType.CONTROL_CENTER;
 import static model.FacilityType.VEHICLE_FACTORY;
@@ -166,7 +167,7 @@ public final class MyStrategy implements Strategy {
                 continue;
             }
 
-           if (initialScale(myGroup)) continue;
+            if (initialScale(myGroup)) continue;
 
             if (myGroup.goToFacility != null && myGroup.getAveragePoint().getDistanceTo(myGroup.goToFacility.getCenterPos()) < 20) {
                 if (!myGroup.goToFacility.isMy() || myGroup.goToFacility.f.getCapturePoints() != game.getMaxFacilityCapturePoints()) {
@@ -850,11 +851,15 @@ public final class MyStrategy implements Strategy {
 
         Map<Long, Map<FacilityType, Map<Point2D, Integer>>> fc = getFacilitiesCount();
 
-        if (group.goToFacility != null && group.goToFacility.isMy()) {
+        if (group.goToFacility != null && group.goToFacility.isMy() && group.goToFacility.f.getCapturePoints() == game.getMaxFacilityCapturePoints()) {
             group.goToFacility = null;
         }
 
-        //if (group.isAeral() || !allEnInvisible) { // or check how far is enemy
+        //if (group.isAeral() || !allEnIn
+        //
+        //
+        //
+        // visible) { // or check how far is enemy
         if (group.isAeral()) { // or check how far is enemy
 
             addToArray(plainArray, fc.get(opponent.getId()).get(CONTROL_CENTER).entrySet(), range, factor * controlCenterFactor * enemyFactor);
@@ -868,18 +873,25 @@ public final class MyStrategy implements Strategy {
 
         if (group.goToFacility == null) {
             Point2D ap = group.getAveragePoint();
-            FacilityWrapper closestFree = um.facilityById.values().stream().filter(f -> {
+            FacilityWrapper closestFree = null;
 
-                if (f.isMy()) {
-                    return false;
-                }
-                for (VehicleGroupInfo groupInfo : myGroups) {
-                    if (groupInfo != group && groupInfo.goToFacility == f && groupInfo.vehicles.size() > 20) {
-                        return false;
-                    }
-                }
-                return true;
-            }).min(Comparator.comparingDouble(value -> value.getCenterPos().squareDistance(ap))).orElse(null);
+            closestFree = getClosestFacility(um.facilityById.values().stream().filter(f -> f.f.getOwnerPlayerId() == -1 && f.f.getType() == VEHICLE_FACTORY), group, ap);
+
+            if (closestFree == null) {
+                closestFree = getClosestFacility(um.facilityById.values().stream().filter(f -> f.isMy() && f.f.getCapturePoints() < game.getMaxFacilityCapturePoints()), group, ap);
+            }
+
+            if (closestFree == null) {
+                closestFree = getClosestFacility(um.facilityById.values().stream().filter(f -> f.f.getOwnerPlayerId() == opponent.getId() && f.f.getType() == VEHICLE_FACTORY), group, ap);
+            }
+
+            if (closestFree == null) {
+                closestFree = getClosestFacility(um.facilityById.values().stream().filter(f -> f.f.getOwnerPlayerId() == -1 && f.f.getType() == CONTROL_CENTER), group, ap);
+            }
+
+            if (closestFree == null) {
+                closestFree = getClosestFacility(um.facilityById.values().stream().filter(f -> f.f.getOwnerPlayerId() == opponent.getId() && f.f.getType() == CONTROL_CENTER), group, ap);
+            }
 
             group.goToFacility = closestFree;
         }
@@ -895,6 +907,21 @@ public final class MyStrategy implements Strategy {
             counts.add(new AbstractMap.SimpleEntry<>(group.goToFacility.getCenterCellPos(), 1));
             addToArray(plainArray, counts, range, factor);
         }
+    }
+
+    private FacilityWrapper getClosestFacility(Stream<FacilityWrapper> facilities, VehicleGroupInfo group, Point2D ap) {
+        return facilities.filter(f -> {
+
+            if (f.isMy()) {
+                return false;
+            }
+            for (VehicleGroupInfo groupInfo : myGroups) {
+                if (groupInfo != group && groupInfo.goToFacility == f && groupInfo.vehicles.size() > 20) {
+                    return false;
+                }
+            }
+            return true;
+        }).min(Comparator.comparingDouble(value -> value.getCenterPos().squareDistance(ap))).orElse(null);
     }
 
     private boolean shouldHeal(VehicleType ifv) {
@@ -1167,7 +1194,7 @@ public final class MyStrategy implements Strategy {
             });
 
             delayedMoves.add(move1 -> {
-              //pass
+                //pass
             });
 
             delayedMoves.add(move1 -> {
