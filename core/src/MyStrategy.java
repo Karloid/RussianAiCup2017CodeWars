@@ -342,7 +342,25 @@ public final class MyStrategy implements Strategy {
                 Set<Map.Entry<Point2D, Integer>> enemyIfv = getUnitsCount(true).get(IFV).entrySet();
 
                 if (enemyTanks.isEmpty() && enemyArrvs.isEmpty() && enemyIfv.isEmpty() && figAndHelicsSet.isEmpty()) {
-                    addToArrayNotOurFacilities(plainArray, range, 1);
+
+                    boolean goToFarFacility = false;
+                    if (goToFarFacility) {
+
+                        List<FacilityWrapper> list = new ArrayList<>(um.facilityById.values());
+                        list.removeIf(FacilityWrapper::isMy);
+                        if (!list.isEmpty()) {
+                            FacilityWrapper max = Collections.max(list, Comparator.comparingDouble(o -> o.getCenterPos().getDistanceTo(0, 0)));
+                            if (max != null) {
+
+                                Set<Map.Entry<Point2D, Integer>> entrySet = new HashSet<>();
+                                entrySet.add(new AbstractMap.SimpleEntry<>(max.getCenterCellPos(), 1));
+                                addToArray(plainArray, entrySet, range, 1f);
+                            }
+                        }
+                    } else {
+                        addToArrayNotOurFacilities(plainArray, range, 1);
+                    }
+
                 } else {
                     addToArray(plainArray, enemyIfv, range, .1f);
                     addToArray(plainArray, enemyTanks, range, .1f);
@@ -550,7 +568,6 @@ public final class MyStrategy implements Strategy {
                 addToArray(plainArray, getUnitsCount(true).get(IFV).entrySet(), range, 1.f);
                 addToArray(plainArray, getUnitsCount(true).get(TANK).entrySet(), range, .9f);
                 addToArray(plainArray, getUnitsCount(true).get(ARRV).entrySet(), range, 0.8f);
-
 
 
                 //if someone closer then my then pass that facility

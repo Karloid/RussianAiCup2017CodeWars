@@ -38,4 +38,9 @@ public class FacilityWrapper {
         }
         return point2D;
     }
+
+    public Point2D getCenterCellPos() {
+        return new Point2D((f.getLeft() + MyStrategy.WORLD_CELL_SIZE) / mys.cellSize,
+                (f.getTop() + MyStrategy.WORLD_CELL_SIZE) / mys.cellSize);
+    }
 }
