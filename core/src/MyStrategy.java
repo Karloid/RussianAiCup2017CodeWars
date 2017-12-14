@@ -168,6 +168,12 @@ public final class MyStrategy implements Strategy {
 
             if (initialScale(myGroup)) continue;
 
+            if (myGroup.goToFacility != null && myGroup.getAveragePoint().getDistanceTo(myGroup.goToFacility.getCenterPos()) < 20) {
+                if (!myGroup.goToFacility.isMy() || myGroup.goToFacility.f.getCapturePoints() != game.getMaxFacilityCapturePoints()) {
+                    log(Utils.LOG_MOVING + " skip move because of capturing " + myGroup);
+                    continue;
+                }
+            }
 
             if (true) {
                 scheduleSelectAll(myGroup);
