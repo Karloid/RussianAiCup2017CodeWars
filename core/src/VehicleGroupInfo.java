@@ -15,6 +15,7 @@ public class VehicleGroupInfo {
     public PointsInfo pointsInfo;
     public List<VehicleWrapper> vehicles = new ArrayList<>();
     public int lastShrinkI;
+    public int lastShrinkForGatherI;
     public boolean isScaled;
     public boolean shouldHeal;
     public int groupNumber;

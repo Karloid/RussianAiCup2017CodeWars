@@ -1543,12 +1543,18 @@ public final class MyStrategy implements Strategy {
         double dx = p.getX() - myAverage.getX();
         double dy = p.getY() - myAverage.getY();
 
-        List<VehicleWrapper> separatedVehicles = myGroup.countWillBeFurtherThenBefore(new Point2D(dx, dy), p);
-        if (separatedVehicles.size() > 0) {
-            log(Utils.LOG_MOVING + " found " + separatedVehicles.size() + " separated vehicles for " + myGroup);
+        // List<VehicleWrapper> separatedVehicles = myGroup.countWillBeFurtherThenBefore(new Point2D(dx, dy), p);
+        // boolean shouldScale = separatedVehicles.size() > 0;
+        boolean shouldScale = Math.sqrt(myGroup.count) * 6 < Math.max(myGroup.pointsInfo.rect.getWidth(), myGroup.pointsInfo.rect.getHeight());
+
+        shouldScale = world.getTickIndex() - myGroup.lastShrinkForGatherI > 400 && shouldScale;
+        if (shouldScale) {
+            myGroup.lastShrinkForGatherI = world.getTickIndex();
+            // log(Utils.LOG_MOVING + " found " + separatedVehicles.size() + " separated vehicles for " + myGroup);
+            log(Utils.LOG_MOVING + " try SCALE ");
             move.setAction(ActionType.SCALE);
-            move.setX(p.getX());
-            move.setY(p.getY());
+            move.setX(myAverage.getX());
+            move.setY(myAverage.getY());
             move.setFactor(0.1);
         } else {
             move.setAction(ActionType.MOVE);

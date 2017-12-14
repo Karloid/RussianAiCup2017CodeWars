@@ -16,6 +16,7 @@ public class RewindClientWrapper implements MyStrategyPainter {
     public static final int LAYER_GENERIC = 4;
 
     private static final boolean RESTRICTED_PP_DRAW = true;
+    private static final boolean DISABLED_PP_DRAW = true;
 
     private MyStrategy mys;
     private RewindClient rc;
@@ -156,6 +157,9 @@ public class RewindClientWrapper implements MyStrategyPainter {
     }
 
     private void drawPP(VehicleGroupInfo myGroup) {
+        if (DISABLED_PP_DRAW) {
+            return;
+        }
 
         PlainArray plainArray = myGroup.potentialMap;
 
