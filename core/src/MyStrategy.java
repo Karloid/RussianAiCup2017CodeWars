@@ -1509,23 +1509,22 @@ public final class MyStrategy implements Strategy {
             }
             for (int x = myX - half; x <= myX + half; x++) {
                 for (int y = myY - half; y <= myY + half; y++) {
-                    if (y == myY && x == myX) {
-                        continue;
-                    }
                     Point2D currentChoice = new Point2D(x, y);
                     if (Math.ceil(currentChoice.getDistanceTo(myX, myY)) > half + 0.01) {
                         continue;
                     }
 
                     currentChoice.setVal(myGroup.potentialMap.get(x, y));
-                    if (bestChoice == null || bestChoice.getVal() < currentChoice.getVal()) {
-                        //TODO check safety
-                        bestChoice = currentChoice;
+                    if (true) {
+                        if (bestChoice == null || bestChoice.getVal() < currentChoice.getVal()) {
+                            //TODO check safety
+                            bestChoice = currentChoice;
+                        }
                     }
                 }
             }
 
-            if (bestChoice != null) {
+            if (bestChoice != null && !bestChoice.equals(new Point2D(myX, myY))) {
                 scheduleSelectAll(myGroup);
                 actualMoveToPoint(myGroup, bestChoice.mul(cellSize).add(cellSize / 2, cellSize / 2), move); //TODO scale\rotate when needed
             } else {
