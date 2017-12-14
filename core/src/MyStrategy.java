@@ -39,7 +39,7 @@ public final class MyStrategy implements Strategy {
     public static final int CAN_DISABLE_FEAR_SINCE_TICK = 9300;
     public static final int CAN_DISABLE_FEAR_SINCE_COUNT = 490;
     public static final int MAX_CELL_DISTANCE_OF_MOVE = 11 / 2;
-    public static final int MAX_SWITCH_COUNT = 3;
+    public static final int MAX_SWITCH_COUNT = 400;
     private static int constantId;
 
     private MyStrategyPainter painter = new EmptyPaintner();
@@ -228,7 +228,14 @@ public final class MyStrategy implements Strategy {
         for (VehicleType vehicleType : VehicleType.values()) {
             allyCounts.putIfAbsent(vehicleType, 0L);
         }
-        Map.Entry<VehicleType, Long> min = Collections.min(allyCounts.entrySet(), Comparator.comparingLong(Map.Entry::getValue));
+        Map.Entry<VehicleType, Long> min = Collections.min(allyCounts.entrySet(), (o1, o2) -> {
+            int compare = Long.compare(o1.getValue(), o2.getValue());
+            if (compare != 0) {
+                return compare;
+            }
+
+            return o2.getKey().compareTo(o1.getKey());
+        });
         if (min.getValue() < FACILITY_SIZE_TO_GO) {
             return min.getKey();
         }
@@ -907,18 +914,18 @@ public final class MyStrategy implements Strategy {
         }
 
 
-        if (myGroup.goToFacility == null) {
+        {
             Point2D ap = myGroup.getAveragePoint();
             FacilityWrapper closestFree = null;
 
             closestFree = getClosestFacility(um.facilityById.values().stream().filter(f -> f.f.getOwnerPlayerId() == -1 && f.f.getType() == VEHICLE_FACTORY), myGroup, ap);
 
             if (closestFree == null) {
-                closestFree = getClosestFacility(um.facilityById.values().stream().filter(f -> f.isMy() && f.f.getCapturePoints() < game.getMaxFacilityCapturePoints()), myGroup, ap);
+                closestFree = getClosestFacility(um.facilityById.values().stream().filter(f -> f.f.getOwnerPlayerId() == opponent.getId() && f.f.getType() == VEHICLE_FACTORY), myGroup, ap);
             }
 
             if (closestFree == null) {
-                closestFree = getClosestFacility(um.facilityById.values().stream().filter(f -> f.f.getOwnerPlayerId() == opponent.getId() && f.f.getType() == VEHICLE_FACTORY), myGroup, ap);
+                closestFree = getClosestFacility(um.facilityById.values().stream().filter(f -> f.isMy() && f.f.getCapturePoints() < game.getMaxFacilityCapturePoints()), myGroup, ap);
             }
 
             if (closestFree == null) {
@@ -929,7 +936,9 @@ public final class MyStrategy implements Strategy {
                 closestFree = getClosestFacility(um.facilityById.values().stream().filter(f -> f.f.getOwnerPlayerId() == opponent.getId() && f.f.getType() == CONTROL_CENTER), myGroup, ap);
             }
 
-            myGroup.goToFacility = closestFree;
+            if (closestFree != null) {
+                myGroup.goToFacility = closestFree;
+            }
         }
 
 
@@ -1485,6 +1494,11 @@ public final class MyStrategy implements Strategy {
                     sizeToGo = 32;
                     break;
             }
+
+            if (myGroups.size() > 13) {
+                sizeToGo *= 1.8;
+            }
+
             if (gc.vehicles.size() > sizeToGo || !fw.isMy()) {
                 refreshGroup(gc);
                 groups.add(0, gc);
@@ -1630,12 +1644,25 @@ public final class MyStrategy implements Strategy {
         shouldScale = world.getTickIndex() - myGroup.lastShrinkForGatherI > 400 && shouldScale;
         if (shouldScale) {
             myGroup.lastShrinkForGatherI = world.getTickIndex();
-            // log(Utils.LOG_MOVING + " found " + separatedVehicles.size() + " separated vehicles for " + myGroup);
-            log(Utils.LOG_MOVING + " try SCALE ");
-            move.setAction(ActionType.SCALE);
-            move.setX(myAverage.getX());
-            move.setY(myAverage.getY());
-            move.setFactor(0.1);
+
+            myGroup.nextShrinkIsScale = !myGroup.nextShrinkIsScale;
+            if (myGroup.nextShrinkIsScale) {
+                // log(Utils.LOG_MOVING + " found " + separatedVehicles.size() + " separated vehicles for " + myGroup);
+                log(Utils.LOG_MOVING + " try SCALE " + myGroup);
+                move.setAction(ActionType.SCALE);
+                move.setX(myAverage.getX());
+                move.setY(myAverage.getY());
+                move.setFactor(0.1);
+            } else {
+                // log(Utils.LOG_MOVING + " found " + separatedVehicles.size() + " separated vehicles for " + myGroup);
+                log(Utils.LOG_MOVING + " try ROTATE " + myGroup);
+                move.setAction(ActionType.ROTATE);
+                move.setX(myAverage.getX());
+                move.setY(myAverage.getY());
+                move.setAngle(myGroup.shrinkRotateToRight ? Math.PI : -Math.PI);
+                myGroup.shrinkRotateToRight = !myGroup.shrinkRotateToRight;
+            }
+
         } else {
             move.setAction(ActionType.MOVE);
 

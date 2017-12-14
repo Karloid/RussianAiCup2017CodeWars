@@ -23,6 +23,8 @@ public class VehicleGroupInfo {
     public int potentialMapCalcAt;
     public FacilityWrapper goToFacility;
     public int switchCount;
+    public boolean nextShrinkIsScale;
+    public boolean shrinkRotateToRight;
 
     public VehicleGroupInfo(Ownership ownership, VehicleType vehicleType, MyStrategy myStrategy) {
         this.ownership = ownership;
