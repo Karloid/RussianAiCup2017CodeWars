@@ -1659,7 +1659,7 @@ public final class MyStrategy implements Strategy {
                 move.setAction(ActionType.ROTATE);
                 move.setX(myAverage.getX());
                 move.setY(myAverage.getY());
-                move.setAngle(myGroup.shrinkRotateToRight ? Math.PI : -Math.PI);
+                move.setAngle((myGroup.shrinkRotateToRight ? Math.PI : -Math.PI) * 0.2f);
                 myGroup.shrinkRotateToRight = !myGroup.shrinkRotateToRight;
             }
 

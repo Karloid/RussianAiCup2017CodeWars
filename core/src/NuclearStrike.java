@@ -3,7 +3,7 @@ import model.VehicleType;
 import java.util.Comparator;
 
 public class NuclearStrike {
-    public static final int PREDICTION_TICK = 33;
+    public static final int PREDICTION_TICK = 33 / 3;
     public static final int KILL_BONUS = 45;
     public final VehicleWrapper myVehicle;
     public final VehicleWrapper target;
@@ -88,7 +88,7 @@ public class NuclearStrike {
         sb.append(", myVehicleDidSurvive=").append(myVehicleDidSurvive);
         sb.append(", myStats=").append(myStats);
         sb.append(", enemyStats=").append(enemyStats);
-        sb.append(", ").append(canceled ? "CANCELED" : succeed ? "SUCCEED" :  actualTs == 0 ? "NOT_FIRED_YET" : "FAILED");
+        sb.append(", ").append(canceled ? "CANCELED" : succeed ? "SUCCEED" : actualTs == 0 ? "NOT_FIRED_YET" : "FAILED");
         sb.append('}');
         return sb.toString();
     }
