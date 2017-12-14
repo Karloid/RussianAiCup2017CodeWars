@@ -166,7 +166,7 @@ public final class MyStrategy implements Strategy {
                 continue;
             }
 
-            if (initialScale(myGroup)) continue;
+           if (initialScale(myGroup)) continue;
 
             if (myGroup.goToFacility != null && myGroup.getAveragePoint().getDistanceTo(myGroup.goToFacility.getCenterPos()) < 20) {
                 if (!myGroup.goToFacility.isMy() || myGroup.goToFacility.f.getCapturePoints() != game.getMaxFacilityCapturePoints()) {
@@ -1165,6 +1165,15 @@ public final class MyStrategy implements Strategy {
                 move1.setY(myGroup.getAveragePoint().getY());
                 move1.setFactor(0.3);
             });
+
+            delayedMoves.add(move1 -> {
+              //pass
+            });
+
+            delayedMoves.add(move1 -> {
+                //pass
+            });
+
             return true;
         }
         return false;
