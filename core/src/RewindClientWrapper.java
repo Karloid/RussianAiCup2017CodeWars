@@ -190,7 +190,7 @@ public class RewindClientWrapper implements MyStrategyPainter {
 
         double root = root(delta, delta);
 
-        double squareMaxDistance = Math.pow(cellSize * (MyStrategy.MAX_CELL_DISTANCE_OF_MOVE + 3), 2);
+        double squareMaxDistance = Math.pow(cellSize * (6 + 3), 2);
 
 
         for (int x = 0; x < cellsX; x++) {

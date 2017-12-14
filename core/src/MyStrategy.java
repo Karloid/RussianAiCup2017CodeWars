@@ -38,7 +38,6 @@ public final class MyStrategy implements Strategy {
     private static final boolean HELICS_WAIT_FOR_FIGHTES = true;
     public static final int CAN_DISABLE_FEAR_SINCE_TICK = 9300;
     public static final int CAN_DISABLE_FEAR_SINCE_COUNT = 490;
-    public static final int MAX_CELL_DISTANCE_OF_MOVE = 11 / 2;
     public static final int MAX_SWITCH_COUNT = 400;
     private static int constantId;
 
@@ -436,7 +435,7 @@ public final class MyStrategy implements Strategy {
 
                 Set<Map.Entry<Point2D, Integer>> myHelic = myHelicsMap.entrySet();
 
-                double range = (GROUP_SIZE * 1.8) / cellSize;
+                double range = (GROUP_SIZE * 1.2) / cellSize;
 
                 int factor = 6;
 
@@ -1592,10 +1591,38 @@ public final class MyStrategy implements Strategy {
             int myY = averagePoint.getIntY();
 
             Point2D bestChoice = null;
-            int half = MAX_CELL_DISTANCE_OF_MOVE;
-            if (myGroup.vehicleType == TANK || myGroup.vehicleType == IFV) {
+            int half = 3;
+        /*    switch (myGroup.vehicleType) {
+                case ARRV:
+                    half = 3;
+                    break;
+                case FIGHTER:
+                    half = 4;
+                    break;
+                case HELICOPTER:
+                    half = 4;
+                    break;
+                case IFV:
+                    half = 3;
+                    break;
+                case TANK:
+                    half = 3;
+                    break;
+            }*/
+
+            long count = um.facilityById.values().stream().filter(v -> v.isMy() && v.f.getType() == CONTROL_CENTER).count();
+
+            if (myGroup.count > 20) {
+                half++;
+                half++;
+            } else if (myGroup.count > 13) {
+                half++;
+            } else if (count >= 2) {
+                half--;
+            } else if (myGroups.size() < 5) {
                 half--;
             }
+
             for (int x = myX - half; x <= myX + half; x++) {
                 for (int y = myY - half; y <= myY + half; y++) {
                     Point2D currentChoice = new Point2D(x, y);
