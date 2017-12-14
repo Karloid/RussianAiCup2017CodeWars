@@ -343,22 +343,18 @@ public final class MyStrategy implements Strategy {
 
                 if (enemyTanks.isEmpty() && enemyArrvs.isEmpty() && enemyIfv.isEmpty() && figAndHelicsSet.isEmpty()) {
 
-                    boolean goToFarFacility = false;
-                    if (goToFarFacility) {
+                    boolean goToFacilities = true;
 
-                        List<FacilityWrapper> list = new ArrayList<>(um.facilityById.values());
-                        list.removeIf(FacilityWrapper::isMy);
-                        if (!list.isEmpty()) {
-                            FacilityWrapper max = Collections.max(list, Comparator.comparingDouble(o -> o.getCenterPos().getDistanceTo(0, 0)));
-                            if (max != null) {
-
-                                Set<Map.Entry<Point2D, Integer>> entrySet = new HashSet<>();
-                                entrySet.add(new AbstractMap.SimpleEntry<>(max.getCenterCellPos(), 1));
-                                addToArray(plainArray, entrySet, range, 1f);
-                            }
-                        }
-                    } else {
+                    Set<Map.Entry<Point2D, Integer>> myArrvs = getUnitsCount(false).get(ARRV).entrySet();
+                    if (myArrvs.isEmpty()) {
                         addToArrayNotOurFacilities(plainArray, range, 1);
+                    } else {
+                        HashSet<Map.Entry<Point2D, Integer>> entries = new HashSet<>(myArrvs);
+                        for (Map.Entry<Point2D, Integer> en : entries) {
+                            en.setValue(1);
+                        }
+                        
+                        addToArray(plainArray, myArrvs, range, .1f);
                     }
 
                 } else {
@@ -448,7 +444,18 @@ public final class MyStrategy implements Strategy {
                 addToArray(plainArray, enemyHelics, range, .3f);
 
                 if (enemyTanks.isEmpty() && enemyArrvs.isEmpty() && enemyIfv.isEmpty() && enemyHelics.isEmpty()) {
-                    addToArrayNotOurFacilities(plainArray, range, 1);
+
+                    Set<Map.Entry<Point2D, Integer>> myIfvs = getUnitsCount(false).get(IFV).entrySet();
+                    if (myIfvs.isEmpty()) {
+                        addToArrayNotOurFacilities(plainArray, range, 1);
+                    } else {
+                        HashSet<Map.Entry<Point2D, Integer>> entries = new HashSet<>(myIfvs);
+                        for (Map.Entry<Point2D, Integer> en : entries) {
+                            en.setValue(1);
+                        }
+
+                        addToArray(plainArray, myIfvs, range, .1f);
+                    }
                 }
 
                 if (!disableFear) {
