@@ -11,12 +11,13 @@ public class RewindClientWrapper implements MyStrategyPainter {
     public static final Color COLOR_MOVE = new Color(6, 100, 0, 128);
     public static final Color COLOR_MY_GROUP = new Color(3, 182, 0, 153);
     public static final Color COLOR_MOVE_POINT = new Color(211, 2, 23, 255);
+    public static final Color COLOR_FACILITY = new Color(211, 147, 0, 255);
     public static final Color COLOR_NUCLEAR = new Color(0, 255, 0, 100);
     private static final Color COLOR_NUCLEAR_VEH_VISION = new Color(180, 183, 76, 147);
     public static final int LAYER_GENERIC = 4;
 
     private static final boolean RESTRICTED_PP_DRAW = true;
-    private static final boolean DISABLED_PP_DRAW = true;
+    private static final boolean DISABLED_PP_DRAW = false;
 
     private MyStrategy mys;
     private RewindClient rc;
@@ -133,6 +134,12 @@ public class RewindClientWrapper implements MyStrategyPainter {
                     rc.line(ap.getX(), ap.getY(), myGroup.moveToPoint.getX(), myGroup.moveToPoint.getY(), COLOR_MOVE_POINT, LAYER_GENERIC);
                 }
 
+                if (myGroup.goToFacility != null) {
+                    Point2D fac = myGroup.goToFacility.getCenterPos();
+                    rc.circle(fac.getX(), fac.getY(), 4, COLOR_FACILITY, 5);
+                    rc.line(ap.getX(), ap.getY(), fac.getX(), fac.getY(), COLOR_FACILITY, 5);
+                }
+
 
                 if (!didDrawPP) {
                     drawPP(myGroup);
@@ -140,7 +147,8 @@ public class RewindClientWrapper implements MyStrategyPainter {
             }
         }
 
-        rc.message(String.format(Locale.US, "\\nMe: %s Opponent: %s\\nActionCooldown: %s\\nNuclearCooldown: %s", mys.me.getScore(), mys.opponent.getScore(), mys.me.getRemainingActionCooldownTicks(), mys.me.getRemainingNuclearStrikeCooldownTicks()));
+        rc.message(String.format(Locale.US, "\\nMe: %s Opponent: %s\\nActionCooldown: %s\\nNuclearCooldown: %s \\nMyGroups count %s",
+                mys.me.getScore(), mys.opponent.getScore(), mys.me.getRemainingActionCooldownTicks(), mys.me.getRemainingNuclearStrikeCooldownTicks(), myGroups.size()));
 
         ArrayList<Map.Entry<ActionType, Integer>> entries = new ArrayList<>(mys.movesStats.entrySet());
         String msg = "\\nMy moves count: " + mys.movesCount + "\\n";

@@ -22,6 +22,7 @@ public class VehicleGroupInfo {
     public PlainArray potentialMap;
     public int potentialMapCalcAt;
     public FacilityWrapper goToFacility;
+    public int switchCount;
 
     public VehicleGroupInfo(Ownership ownership, VehicleType vehicleType, MyStrategy myStrategy) {
         this.ownership = ownership;

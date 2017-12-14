@@ -39,6 +39,7 @@ public final class MyStrategy implements Strategy {
     public static final int CAN_DISABLE_FEAR_SINCE_TICK = 9300;
     public static final int CAN_DISABLE_FEAR_SINCE_COUNT = 490;
     public static final int MAX_CELL_DISTANCE_OF_MOVE = 11 / 2;
+    public static final int MAX_SWITCH_COUNT = 3;
     private static int constantId;
 
     private MyStrategyPainter painter = new EmptyPaintner();
@@ -547,7 +548,7 @@ public final class MyStrategy implements Strategy {
                 addToArray(plainArray, getUnitsCount(true).get(ARRV).entrySet(), range, 0.82f);
 
 
-                addToArrayNotOurFacilities(plainArray, range, .88f, group);
+                addToArrayNotOurFacilities(plainArray, range, 0.88f, group);
 
 
                 addToArray(plainArray, enemyIfv, range, .4f);
@@ -843,24 +844,59 @@ public final class MyStrategy implements Strategy {
         }
     }
 
-    private void addToArrayNotOurFacilities(PlainArray plainArray, double range, float factor, VehicleGroupInfo group) {
-        //TODO ignore facility if some other ally group is nearby !!
+    private void addToArrayNotOurFacilities(PlainArray plainArray, double range, float factor, VehicleGroupInfo myGroup) {
+        //TODO ignore facility if some other ally myGroup is nearby !!
         //TODO stay still when capturing
         float enemyFactor = 1f;
         float controlCenterFactor = 1;
 
         Map<Long, Map<FacilityType, Map<Point2D, Integer>>> fc = getFacilitiesCount();
 
-        if (group.goToFacility != null && group.goToFacility.isMy() && group.goToFacility.f.getCapturePoints() == game.getMaxFacilityCapturePoints()) {
-            group.goToFacility = null;
+        if (myGroup.goToFacility != null && myGroup.goToFacility.isMy() && myGroup.goToFacility.f.getCapturePoints() == game.getMaxFacilityCapturePoints()) {
+            myGroup.goToFacility = null;
         }
 
-        //if (group.isAeral() || !allEnIn
+        if (myGroup.goToFacility != null && myGroup.switchCount < MAX_SWITCH_COUNT) {
+            //try to switch
+
+            for (int i = 0; i < 4; i++) {
+                for (VehicleGroupInfo other : myGroups) {
+                    if (other == myGroup) {
+                        continue;
+                    }
+                    if (other.goToFacility == null) {
+                        continue;
+                    }
+
+                    if (other.switchCount >= MAX_SWITCH_COUNT) {
+                        continue;
+                    }
+                    FacilityWrapper myF = myGroup.goToFacility;
+                    Point2D myAp = myGroup.getAveragePoint();
+
+                    Point2D otherAp = other.getAveragePoint();
+                    FacilityWrapper otherF = other.goToFacility;
+
+                    boolean f1 = otherAp.getDistanceTo(otherF) > otherAp.getDistanceTo(myF);
+                    boolean f2 = myAp.getDistanceTo(myF) > myAp.getDistanceTo(otherAp);
+
+                    if (f1 && f2) {
+                        log(" SWITCH GO TO FACILITY " + myGroup + " and " + other);
+                        myGroup.goToFacility = otherF;
+                        other.goToFacility = myF;
+                        other.switchCount++;
+                        myGroup.switchCount++;
+                    }
+                }
+            }
+        }
+
+        //if (myGroup.isAeral() || !allEnIn
         //
         //
         //
         // visible) { // or check how far is enemy
-        if (group.isAeral()) { // or check how far is enemy
+        if (myGroup.isAeral()) { // or check how far is enemy
 
             addToArray(plainArray, fc.get(opponent.getId()).get(CONTROL_CENTER).entrySet(), range, factor * controlCenterFactor * enemyFactor);
             addToArray(plainArray, fc.get(-1L).get(CONTROL_CENTER).entrySet(), range, factor * controlCenterFactor);
@@ -871,40 +907,43 @@ public final class MyStrategy implements Strategy {
         }
 
 
-        if (group.goToFacility == null) {
-            Point2D ap = group.getAveragePoint();
+        if (myGroup.goToFacility == null) {
+            Point2D ap = myGroup.getAveragePoint();
             FacilityWrapper closestFree = null;
 
-            closestFree = getClosestFacility(um.facilityById.values().stream().filter(f -> f.f.getOwnerPlayerId() == -1 && f.f.getType() == VEHICLE_FACTORY), group, ap);
+            closestFree = getClosestFacility(um.facilityById.values().stream().filter(f -> f.f.getOwnerPlayerId() == -1 && f.f.getType() == VEHICLE_FACTORY), myGroup, ap);
 
             if (closestFree == null) {
-                closestFree = getClosestFacility(um.facilityById.values().stream().filter(f -> f.isMy() && f.f.getCapturePoints() < game.getMaxFacilityCapturePoints()), group, ap);
+                closestFree = getClosestFacility(um.facilityById.values().stream().filter(f -> f.isMy() && f.f.getCapturePoints() < game.getMaxFacilityCapturePoints()), myGroup, ap);
             }
 
             if (closestFree == null) {
-                closestFree = getClosestFacility(um.facilityById.values().stream().filter(f -> f.f.getOwnerPlayerId() == opponent.getId() && f.f.getType() == VEHICLE_FACTORY), group, ap);
+                closestFree = getClosestFacility(um.facilityById.values().stream().filter(f -> f.f.getOwnerPlayerId() == opponent.getId() && f.f.getType() == VEHICLE_FACTORY), myGroup, ap);
             }
 
             if (closestFree == null) {
-                closestFree = getClosestFacility(um.facilityById.values().stream().filter(f -> f.f.getOwnerPlayerId() == -1 && f.f.getType() == CONTROL_CENTER), group, ap);
+                closestFree = getClosestFacility(um.facilityById.values().stream().filter(f -> f.f.getOwnerPlayerId() == -1 && f.f.getType() == CONTROL_CENTER), myGroup, ap);
             }
 
             if (closestFree == null) {
-                closestFree = getClosestFacility(um.facilityById.values().stream().filter(f -> f.f.getOwnerPlayerId() == opponent.getId() && f.f.getType() == CONTROL_CENTER), group, ap);
+                closestFree = getClosestFacility(um.facilityById.values().stream().filter(f -> f.f.getOwnerPlayerId() == opponent.getId() && f.f.getType() == CONTROL_CENTER), myGroup, ap);
             }
 
-            group.goToFacility = closestFree;
+            myGroup.goToFacility = closestFree;
         }
 
 
-        if (group.goToFacility == null) {
+        if (myGroup.goToFacility == null) {
             addToArray(plainArray, fc.get(opponent.getId()).get(CONTROL_CENTER).entrySet(), range, factor * controlCenterFactor * enemyFactor);
             addToArray(plainArray, fc.get(-1L).get(CONTROL_CENTER).entrySet(), range, factor * controlCenterFactor);
             addToArray(plainArray, fc.get(opponent.getId()).get(VEHICLE_FACTORY).entrySet(), range, factor * enemyFactor);
             addToArray(plainArray, fc.get(-1L).get(VEHICLE_FACTORY).entrySet(), range, factor);
         } else {
+            if (myGroup.goToFacility.f.getType() == VEHICLE_FACTORY) {
+                factor = 1.1f;
+            }
             HashSet<Map.Entry<Point2D, Integer>> counts = new HashSet<>();
-            counts.add(new AbstractMap.SimpleEntry<>(group.goToFacility.getCenterCellPos(), 1));
+            counts.add(new AbstractMap.SimpleEntry<>(myGroup.goToFacility.getCenterCellPos(), 1));
             addToArray(plainArray, counts, range, factor);
         }
     }
@@ -1691,6 +1730,49 @@ public final class MyStrategy implements Strategy {
                 groups.add(info1);
             }
         }
+
+        if (world.getFacilities().length > 6) {
+            //TODO split arrvs
+
+            for (VehicleGroupInfo group : groups) {
+                if (group.vehicleType == ARRV) {
+                    groups.remove(group);
+
+                    {
+                        VehicleGroupInfo g1 = new VehicleGroupInfo(ownership, ARRV, this);
+                        g1.pointsInfo = um.streamVehicles(ownership, ARRV)
+                                .filter(vehicle -> vehicle.v.getX() > group.getAveragePoint().getX())
+                                .map(vehicle -> {
+                                    g1.count++;
+                                    g1.vehicles.add(vehicle); //TODO optimize
+                                    return new Point2D(vehicle.v.getX(), vehicle.v.getY());
+                                })
+                                .collect(Utils.POINT_COLLECTOR);
+                        groups.add(g1);
+                    }
+
+                    {
+                        VehicleGroupInfo g1 = new VehicleGroupInfo(ownership, ARRV, this);
+                        g1.pointsInfo = um.streamVehicles(ownership, ARRV)
+                                .filter(vehicle -> vehicle.v.getX() <= group.getAveragePoint().getX())
+                                .map(vehicle -> {
+                                    g1.count++;
+                                    g1.vehicles.add(vehicle); //TODO optimize
+                                    return new Point2D(vehicle.v.getX(), vehicle.v.getY());
+                                })
+                                .collect(Utils.POINT_COLLECTOR);
+                        groups.add(g1);
+                    }
+
+                    break;
+                }
+
+            }
+
+        }
+
+        groups.sort((o1, o2) -> o2.vehicleType.compareTo(o1.vehicleType));
+
         return groups;
     }
 
