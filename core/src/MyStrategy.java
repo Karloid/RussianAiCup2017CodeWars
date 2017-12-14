@@ -848,7 +848,8 @@ public final class MyStrategy implements Strategy {
             group.goToFacility = null;
         }
 
-        if (group.isAeral() || !allEnInvisible) { // or check how far is enemy
+        //if (group.isAeral() || !allEnInvisible) { // or check how far is enemy
+        if (group.isAeral()) { // or check how far is enemy
 
             addToArray(plainArray, fc.get(opponent.getId()).get(CONTROL_CENTER).entrySet(), range, factor * controlCenterFactor * enemyFactor);
             addToArray(plainArray, fc.get(-1L).get(CONTROL_CENTER).entrySet(), range, factor * controlCenterFactor);
@@ -867,7 +868,7 @@ public final class MyStrategy implements Strategy {
                     return false;
                 }
                 for (VehicleGroupInfo groupInfo : myGroups) {
-                    if (groupInfo != group && groupInfo.goToFacility == f) {
+                    if (groupInfo != group && groupInfo.goToFacility == f && groupInfo.vehicles.size() > 20) {
                         return false;
                     }
                 }
