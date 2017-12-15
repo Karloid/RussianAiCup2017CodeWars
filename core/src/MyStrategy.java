@@ -783,7 +783,7 @@ public final class MyStrategy implements Strategy {
             HashMap<Point2D, Integer> cornerPushersFiltered = new HashMap<>(cornersPushers);
             cornerPushersFiltered.keySet().removeIf(corner -> {
                 for (Point2D facPoint : allFacCounts.keySet()) {
-                    if (facPoint.squareDistance(corner) < 3 * 4 + 2) {
+                    if (facPoint.squareDistance(corner) < maxDistanceSquare) {
                         return true;
                     }
                 }
