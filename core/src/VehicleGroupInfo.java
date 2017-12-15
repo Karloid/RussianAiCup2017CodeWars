@@ -17,6 +17,7 @@ public class VehicleGroupInfo {
     public int lastShrinkI;
     public int lastShrinkForGatherI;
     public boolean isScaled;
+    public boolean isRotated;
     public boolean shouldHeal;
     public int groupNumber;
     public PlainArray potentialMap;

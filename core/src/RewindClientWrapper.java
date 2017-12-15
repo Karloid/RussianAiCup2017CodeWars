@@ -190,9 +190,11 @@ public class RewindClientWrapper implements MyStrategyPainter {
 
         double root = root(delta, delta);
 
-        double squareMaxDistance = Math.pow(cellSize * (6 + 3), 2);
+        int maxDistance = 15;
+        double squareMaxDistance = Math.pow(cellSize * maxDistance, 2);
 
 
+        mys.log("start draw " + myGroup.vehicleType);
         for (int x = 0; x < cellsX; x++) {
             for (int y = 0; y < cellsY; y++) {
                 double v = plainArray.get(x, y) - min;
@@ -208,16 +210,16 @@ public class RewindClientWrapper implements MyStrategyPainter {
                     if (RESTRICTED_PP_DRAW && myGroup.getAveragePoint().squareDistance(centerX, centerY) > squareMaxDistance) {
                         continue; // too far for decide
                     }
-
+                    //mys.log(String.format("%s %s %s - v: %s", myGroup.vehicleType, realX, realY, (int) v));
+                    //System.out.print(String.format("%s %s %s - v: %s", myGroup.vehicleType, realX, realY, (int) v));
+                //    System.out.print((int) v + " ");
                     rc.rect(realX, realY, realX + cellSize, realY + cellSize, new Color(133, alpha, 255 - alpha, 100), 1);
-
                 }
             }
+           // System.out.println();
         }
 
         // rc.message(String.format("\\n%s\\nMap Draw: min %.2f max %.2f \\ndelta %.2f", myGroup.vehicleType, min, max, delta));
-
-
     }
 
     private void drawMoveActual() {

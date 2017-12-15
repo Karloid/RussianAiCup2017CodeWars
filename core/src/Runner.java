@@ -46,7 +46,8 @@ public final class Runner {
                 //runProc(null, true, "java", "-cp", "23.4.jar", "Runner");
                 //runProc(null, true, "java", "-cp", "23.5.jar", "Runner");
                 //runProc(null, true, "java", "-cp", "24.jar", "Runner");
-                runProc(null, true, "java", "-cp", "25.jar", "Runner");
+                //runProc(null, true, "java", "-cp", "25.jar", "Runner");
+                runProc(null, true, "java", "-cp", "27.jar", "Runner");
             }
         }).start();
         new Runner(new String[]{"127.0.0.1", hasArgs ? "31001" : "31002", "0000000000000000"}).run();

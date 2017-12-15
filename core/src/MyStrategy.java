@@ -89,7 +89,6 @@ public final class MyStrategy implements Strategy {
     private VehicleGroupInfo currentMapGroup;
     private Map<Point2D, Integer> cornersPushers;
     private Map<Point2D, Integer> sidesPushers;
-    private Map<Point2D, Integer> allFacCounts;
     private boolean isFacilityMode;
     private boolean nextIsTankIfFog = true;
     private boolean allEnInvisible;
@@ -166,6 +165,8 @@ public final class MyStrategy implements Strategy {
             if (myGroup.isMovingToPoint()) {
                 continue;
             }
+
+            if (initialRotate(myGroup)) continue;
 
             if (initialScale(myGroup)) continue;
 
@@ -638,7 +639,7 @@ public final class MyStrategy implements Strategy {
 
 
                 //if someone closer then my then pass that facility
-                removeFacilityIfSomeoneCloser(group);
+                //removeFacilityIfSomeoneCloser(group);
 
                 addToArrayNotOurFacilities(plainArray, range, .9f, group);
 
@@ -754,15 +755,19 @@ public final class MyStrategy implements Strategy {
         { //add negative to corners
             int maxDistanceSquare = 8 * 8;
 
-            int maxIndex = plainArray.cellsWidth - 1;
+            int distanceToFac = 6;
 
-            if (allFacCounts == null) {
-                allFacCounts = new HashMap<>();
-                for (Map<FacilityType, Map<Point2D, Integer>> map : getFacilitiesCount().values()) {
-                    for (Map<Point2D, Integer> counts : map.values()) {
-                        allFacCounts.putAll(counts);
-                    }
-                }
+            int maxIndex = plainArray.cellsWidth - 1;
+            Map<Point2D, Integer> allFacCounts;
+
+
+            allFacCounts = new HashMap<>();
+            for (Map<Point2D, Integer> counts : getFacilitiesCount().get(opponent.getId()).values()) {
+                allFacCounts.putAll(counts);
+            }
+
+            for (Map<Point2D, Integer> counts : getFacilitiesCount().get(-1L).values()) {
+                allFacCounts.putAll(counts);
             }
 
             if (cornersPushers == null) {
@@ -774,18 +779,18 @@ public final class MyStrategy implements Strategy {
                 cornersPushers.put(new Point2D(maxIndex, maxIndex), 1);
 
 
-                cornersPushers.keySet().removeIf(corner -> {
-                    for (Point2D facPoint : allFacCounts.keySet()) {
-                        if (facPoint.squareDistance(corner) < 13 * 13) {
-                            return true;
-                        }
-                    }
-                    return false;
-                });
-
             }
-
             HashMap<Point2D, Integer> cornerPushersFiltered = new HashMap<>(cornersPushers);
+            cornerPushersFiltered.keySet().removeIf(corner -> {
+                for (Point2D facPoint : allFacCounts.keySet()) {
+                    if (facPoint.squareDistance(corner) < maxDistanceSquare) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+
+
 
             cornerPushersFiltered.keySet().removeIf(corner -> {
                 int distanceThreshold = 13 * 13;
@@ -820,6 +825,7 @@ public final class MyStrategy implements Strategy {
                 return false;
             });
 
+
             subFromArray(plainArray, cornerPushersFiltered.entrySet(), 3 * 4, 3, -1);
 
             if (sidesPushers == null) {
@@ -832,18 +838,32 @@ public final class MyStrategy implements Strategy {
                     sidesPushers.put(new Point2D(maxIndex, i), 1);
 
                 }
-
-                sidesPushers.keySet().removeIf(side -> {
-                    for (Point2D facPoint : allFacCounts.keySet()) {
-                        if (facPoint.squareDistance(side) < maxDistanceSquare) {
-                            return true;
-                        }
-                    }
-                    return false;
-                });
             }
+            HashMap<Point2D, Integer> sidesPushersFiltered = new HashMap<>(sidesPushers);
 
-            subFromArray(plainArray, sidesPushers.entrySet(), 3 * 3, 1, -1);
+            sidesPushersFiltered.keySet().removeIf(side -> {
+                for (Point2D facPoint : allFacCounts.keySet()) {
+                    if (facPoint.squareDistance(side) < maxDistanceSquare) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+
+
+            subFromArray(plainArray, sidesPushersFiltered.entrySet(), 3 * 3, 1, -1);
+
+
+            //strict {
+
+            for (int x = 0; x < plainArray.cellsWidth; x++) {
+                for (int y = 0; y < plainArray.cellsHeight; y++) {
+
+                    if (x == 0 || y == 0 || x == plainArray.cellsWidth - 1 || y == plainArray.cellsHeight - 1) {
+                        plainArray.set(x, y, plainArray.get(x, y) - 30);
+                    }
+                }
+            }
         }
 
 
@@ -1270,6 +1290,30 @@ public final class MyStrategy implements Strategy {
 
         delayedMove.accept(move);
         return true;
+    }
+
+    private boolean initialRotate(VehicleGroupInfo myGroup) {
+        if (!myGroup.isRotated && myGroup.vehicles.get(0).v.isAerial()) {
+            myGroup.isRotated = true;
+            scheduleSelectAll(myGroup);
+            delayedMoves.add(move1 -> {
+                move1.setAction(ActionType.ROTATE);
+                move1.setX(myGroup.getAveragePoint().getX());
+                move1.setY(myGroup.getAveragePoint().getY());
+                move1.setAngle(Math.PI / 4);
+            });
+
+            delayedMoves.add(move1 -> {
+                //pass
+            });
+
+            delayedMoves.add(move1 -> {
+                //pass
+            });
+
+            return true;
+        }
+        return false;
     }
 
 
@@ -1722,7 +1766,7 @@ public final class MyStrategy implements Strategy {
         // boolean shouldScale = separatedVehicles.size() > 0;
         boolean shouldScale = Math.sqrt(myGroup.count) * 6 < Math.max(myGroup.pointsInfo.rect.getWidth(), myGroup.pointsInfo.rect.getHeight());
 
-        shouldScale = world.getTickIndex() - myGroup.lastShrinkForGatherI > 400 && shouldScale;
+        shouldScale = world.getTickIndex() - myGroup.lastShrinkForGatherI > 350 && shouldScale;
         if (shouldScale) {
             myGroup.lastShrinkForGatherI = world.getTickIndex();
 
