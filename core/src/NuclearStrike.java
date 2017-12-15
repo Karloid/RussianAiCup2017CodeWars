@@ -62,7 +62,7 @@ public class NuclearStrike {
                     }
 
                     if (veh.v.getType() == VehicleType.ARRV) {
-                        dmg *= 0.6f;
+                        dmg *= 0.2f;
                     }
 
                     boolean isEnemy = veh.isEnemy;
@@ -93,9 +93,7 @@ public class NuclearStrike {
         return sb.toString();
     }
 
-    public static NuclearStrike getMaxDmg(MyStrategy mys) {
-        int remainingHp = mys.um.enemyStats.remainingHp;
-        int minNuclearDmg = (int) Math.min(MyStrategy.MIN_NUCLEAR_DMG, remainingHp * 0.7);
+    public static NuclearStrike getMaxDmg(MyStrategy mys, int minNuclearDmg) {
         return mys.um.streamVehicles(Ownership.ENEMY)
                 .flatMap((VehicleWrapper v) ->
                         mys.um.streamVehicles(Ownership.ALLY)

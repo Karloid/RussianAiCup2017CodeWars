@@ -29,7 +29,7 @@ public final class MyStrategy implements Strategy {
     public static final int WORLD_CELL_SIZE = 32;
     public static final double GROUP_SIZE = 50;
     public static final double GROUP_HALF_SIZE = GROUP_SIZE / 2;
-    public static final int MIN_NUCLEAR_DMG = 500;
+    public static final int MIN_NUCLEAR_DMG = 520;
     public static final List<VehicleType> FIGHTER_PREF_TARGETS = Arrays.asList(HELICOPTER, FIGHTER);
     public static final List<VehicleType> HELI_PREF_TARGETS = Arrays.asList(TANK, ARRV, HELICOPTER, IFV, FIGHTER);
     public static final double SHOULD_HEAL_TRESHOLD = 0.64;
@@ -169,7 +169,7 @@ public final class MyStrategy implements Strategy {
 
             if (initialScale(myGroup)) continue;
 
-            if (myGroup.goToFacility != null && myGroup.getAveragePoint().getDistanceTo(myGroup.goToFacility.getCenterPos()) < 20) {
+            if (myGroup.goToFacility != null && myGroup.getAveragePoint().getDistanceTo(myGroup.getGoToFacilityPoint()) < 14) {
                 if (!myGroup.goToFacility.isMy() || myGroup.goToFacility.f.getCapturePoints() != game.getMaxFacilityCapturePoints()) {
                     log(Utils.LOG_MOVING + " skip move because of capturing " + myGroup);
                     continue;
@@ -226,6 +226,9 @@ public final class MyStrategy implements Strategy {
 
         for (VehicleType vehicleType : VehicleType.values()) {
             allyCounts.putIfAbsent(vehicleType, 0L);
+        }
+        if (allyCounts.get(TANK) <= 100) {
+            return TANK;
         }
         Map.Entry<VehicleType, Long> min = Collections.min(allyCounts.entrySet(), (o1, o2) -> {
             int compare = Long.compare(o1.getValue(), o2.getValue());
@@ -635,7 +638,7 @@ public final class MyStrategy implements Strategy {
 
                 Set<Map.Entry<Point2D, Integer>> myGroundUnits2 = myGroundUnits.entrySet();
 
-                double range = (GROUP_SIZE * 1.3) / cellSize;
+                double range = (GROUP_SIZE * 1.05) / cellSize;
 
                 int factor = 2;
 
@@ -913,7 +916,7 @@ public final class MyStrategy implements Strategy {
         }
 
 
-        {
+        if (myGroup.goToFacility == null || myGroup.getAveragePoint().getDistanceTo(myGroup.goToFacility) > 64 * 1.4) {
             Point2D ap = myGroup.getAveragePoint();
             FacilityWrapper closestFree = null;
 
@@ -951,8 +954,17 @@ public final class MyStrategy implements Strategy {
                 factor = 1.1f;
             }
             HashSet<Map.Entry<Point2D, Integer>> counts = new HashSet<>();
-            counts.add(new AbstractMap.SimpleEntry<>(myGroup.goToFacility.getCenterCellPos(), 1));
+            Point2D cf = myGroup.goToFacility.getCenterCellPos();
+            counts.add(new AbstractMap.SimpleEntry<>(cf, 1));
             addToArray(plainArray, counts, range, factor);
+
+            counts.clear();
+            // if (myGroup.count > 50) {
+            counts.add(new AbstractMap.SimpleEntry<>(cf.add(1, 1), 1));
+            // } else {
+            //     counts.add(new AbstractMap.SimpleEntry<>(cf.add(2, 2), 1)); //TOO FAR
+            // }
+            addToArray(plainArray, counts, 2, factor);
         }
     }
 
@@ -1291,10 +1303,10 @@ public final class MyStrategy implements Strategy {
     private boolean tryPickNuclearTarget() {
         if (me.getRemainingNuclearStrikeCooldownTicks() == 0 && scheduledStrike == null) {
             int remainingHp = um.enemyStats.remainingHp;
-            int minNuclearDmg = (int) Math.min(MyStrategy.MIN_NUCLEAR_DMG, remainingHp * 0.6);
 
+            int minNuclearDmg = world.getTickIndex() > 8_000 ? (int) Math.min(MyStrategy.MIN_NUCLEAR_DMG, remainingHp * 0.6) : MyStrategy.MIN_NUCLEAR_DMG;
 
-            NuclearStrike max = NuclearStrike.getMaxDmg(this);
+            NuclearStrike max = NuclearStrike.getMaxDmg(this, minNuclearDmg);
 
             if (max != null && max.predictedDmg > minNuclearDmg) {
                 scheduledStrike = max;
@@ -1314,7 +1326,7 @@ public final class MyStrategy implements Strategy {
                         log(Utils.LOG_NUCLEAR_STRIKE + " correct point to " + max.actualTarget + " distance is " + max.actualTarget.getDistanceTo(max.myVehicle) + " maxDistance: " + maxDistance);
                     }
                     max.recalcPredicted();
-                    if (max.predictedDmg < remainingHp) {
+                    if (max.predictedDmg < minNuclearDmg) {
                         log(Utils.LOG_NUCLEAR_STRIKE + " find new target or cancel");
                         scheduledStrike.finish();
                         scheduledStrike.canceled = true;
@@ -1570,7 +1582,6 @@ public final class MyStrategy implements Strategy {
             groups.add(myGroup);
             refreshGroups(groups, false);
             enemyGroups = getGroupsWithoutGeometry(Ownership.ENEMY);
-            ;
 
             if (groups.isEmpty()) {
                 log(WARN + "group " + myGroup + " is destroyed");
@@ -1630,6 +1641,10 @@ public final class MyStrategy implements Strategy {
                         continue;
                     }
 
+                    if (y == myY && x == myX && myGroup.noMoveCount > 10) {
+                        continue;
+                    }
+
                     currentChoice.setVal(myGroup.potentialMap.get(x, y));
                     if (true) {
                         if (bestChoice == null || bestChoice.getVal() < currentChoice.getVal()) {
@@ -1640,7 +1655,14 @@ public final class MyStrategy implements Strategy {
                 }
             }
 
-            if (bestChoice != null && !bestChoice.equals(new Point2D(myX, myY))) {
+            boolean noMove = bestChoice != null && !bestChoice.equals(new Point2D(myX, myY));
+            if (noMove) {
+                myGroup.noMoveCount++;
+            } else {
+                myGroup.noMoveCount = 0;
+            }
+
+            if (bestChoice != null && noMove) {
                 scheduleSelectAll(myGroup);
                 actualMoveToPoint(myGroup, bestChoice.mul(cellSize).add(cellSize / 2, cellSize / 2), move); //TODO scale\rotate when needed
             } else {

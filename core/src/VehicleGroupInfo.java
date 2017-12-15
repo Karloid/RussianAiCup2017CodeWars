@@ -25,6 +25,7 @@ public class VehicleGroupInfo {
     public int switchCount;
     public boolean nextShrinkIsScale;
     public boolean shrinkRotateToRight;
+    public int noMoveCount;
 
     public VehicleGroupInfo(Ownership ownership, VehicleType vehicleType, MyStrategy myStrategy) {
         this.ownership = ownership;
@@ -88,5 +89,15 @@ public class VehicleGroupInfo {
 
     public boolean isAeral() {
         return vehicles.get(0).v.isAerial();
+    }
+
+    public Point2D getGoToFacilityPoint() {
+        Point2D centerPos = goToFacility.getCenterPos();
+        //if (count > 50) {
+            centerPos = centerPos.add(16, 16);
+        /*} else {        //TOO FAR
+            centerPos = centerPos.add(32, 32);
+        }*/
+        return centerPos;
     }
 }

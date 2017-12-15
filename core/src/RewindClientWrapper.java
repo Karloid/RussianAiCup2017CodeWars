@@ -135,7 +135,7 @@ public class RewindClientWrapper implements MyStrategyPainter {
                 }
 
                 if (myGroup.goToFacility != null) {
-                    Point2D fac = myGroup.goToFacility.getCenterPos();
+                    Point2D fac = myGroup.getGoToFacilityPoint();
                     rc.circle(fac.getX(), fac.getY(), 4, COLOR_FACILITY, 5);
                     rc.line(ap.getX(), ap.getY(), fac.getX(), fac.getY(), COLOR_FACILITY, 5);
                 }
@@ -215,7 +215,7 @@ public class RewindClientWrapper implements MyStrategyPainter {
             }
         }
 
-      // rc.message(String.format("\\n%s\\nMap Draw: min %.2f max %.2f \\ndelta %.2f", myGroup.vehicleType, min, max, delta));
+        // rc.message(String.format("\\n%s\\nMap Draw: min %.2f max %.2f \\ndelta %.2f", myGroup.vehicleType, min, max, delta));
 
 
     }
