@@ -29,7 +29,6 @@ public final class MyStrategy implements Strategy {
     public static final int WORLD_CELL_SIZE = 32;
     public static final double GROUP_SIZE = 50;
     public static final double GROUP_HALF_SIZE = GROUP_SIZE / 2;
-    public static final int MIN_NUCLEAR_DMG = 520;
     public static final List<VehicleType> FIGHTER_PREF_TARGETS = Arrays.asList(HELICOPTER, FIGHTER);
     public static final List<VehicleType> HELI_PREF_TARGETS = Arrays.asList(TANK, ARRV, HELICOPTER, IFV, FIGHTER);
     public static final double SHOULD_HEAL_TRESHOLD = 0.64;
@@ -791,7 +790,6 @@ public final class MyStrategy implements Strategy {
             });
 
 
-
             cornerPushersFiltered.keySet().removeIf(corner -> {
                 int distanceThreshold = 13 * 13;
                 for (Point2D facPoint : getUnitsCount(true).get(ARRV).keySet()) {
@@ -1389,7 +1387,7 @@ public final class MyStrategy implements Strategy {
         if (me.getRemainingNuclearStrikeCooldownTicks() == 0 && scheduledStrike == null) {
             int remainingHp = um.enemyStats.remainingHp;
 
-            int minNuclearDmg = world.getTickIndex() > 8_000 ? (int) Math.min(MyStrategy.MIN_NUCLEAR_DMG, remainingHp * 0.6) : MyStrategy.MIN_NUCLEAR_DMG;
+            int minNuclearDmg = world.getTickIndex() > 8_000 ? (int) Math.min(getMinNuclearDmg(), remainingHp * 0.6) : getMinNuclearDmg();
 
             NuclearStrike max = NuclearStrike.getMaxDmg(this, minNuclearDmg);
 
@@ -1448,6 +1446,10 @@ public final class MyStrategy implements Strategy {
 
         }
         return false;
+    }
+
+    public int getMinNuclearDmg() {
+        return world.getTickIndex() > 6000 ? 3000 : 3700;
     }
 
     private double getSmartDistance(VehicleGroupInfo g1, VehicleGroupInfo g2) {

@@ -3,7 +3,7 @@ import model.VehicleType;
 import java.util.Comparator;
 
 public class NuclearStrike {
-    public static final int PREDICTION_TICK = 33 / 3;
+    public static final int PREDICTION_TICK = 0;
     public static final int KILL_BONUS = 45;
     public final VehicleWrapper myVehicle;
     public final VehicleWrapper target;
@@ -114,7 +114,7 @@ public class NuclearStrike {
 
         myVehicleDidSurvive = myVehicle.v.getDurability() > 0;
 
-        if (enemyStats.damagedPoints < -MyStrategy.MIN_NUCLEAR_DMG) {
+        if (enemyStats.damagedPoints < -myStrategy.getMinNuclearDmg()) {
             succeed = true;
         }
         myStrategy.didNuclearStrikes.add(this);
