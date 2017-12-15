@@ -534,7 +534,7 @@ public final class MyStrategy implements Strategy {
                         }
                     }
 
-                    if (intruders && count > 0.05 * group.count) {
+                    if (intruders && count > 0.05 * group.count && opponent.getRemainingNuclearStrikeCooldownTicks() > 150) {
                         Set<Map.Entry<Point2D, Integer>> myIfvs = new HashMap<>(getUnitsCount(false).get(IFV)).entrySet();
                         for (Map.Entry<Point2D, Integer> myIfv : myIfvs) {
                             myIfv.setValue(Math.max(15 - myIfv.getValue(), 1));
@@ -783,7 +783,7 @@ public final class MyStrategy implements Strategy {
             HashMap<Point2D, Integer> cornerPushersFiltered = new HashMap<>(cornersPushers);
             cornerPushersFiltered.keySet().removeIf(corner -> {
                 for (Point2D facPoint : allFacCounts.keySet()) {
-                    if (facPoint.squareDistance(corner) < maxDistanceSquare) {
+                    if (facPoint.squareDistance(corner) < 3 * 4 + 2) {
                         return true;
                     }
                 }
@@ -917,40 +917,7 @@ public final class MyStrategy implements Strategy {
             myGroup.goToFacility = null;
         }
 
-        if (myGroup.goToFacility != null && myGroup.switchCount < MAX_SWITCH_COUNT) {
-            //try to switch
-
-            for (int i = 0; i < 4; i++) {
-                for (VehicleGroupInfo other : myGroups) {
-                    if (other == myGroup) {
-                        continue;
-                    }
-                    if (other.goToFacility == null) {
-                        continue;
-                    }
-
-                    if (other.switchCount >= MAX_SWITCH_COUNT) {
-                        continue;
-                    }
-                    FacilityWrapper myF = myGroup.goToFacility;
-                    Point2D myAp = myGroup.getAveragePoint();
-
-                    Point2D otherAp = other.getAveragePoint();
-                    FacilityWrapper otherF = other.goToFacility;
-
-                    boolean f1 = otherAp.getDistanceTo(otherF) > otherAp.getDistanceTo(myF);
-                    boolean f2 = myAp.getDistanceTo(myF) > myAp.getDistanceTo(otherAp);
-
-                    if (f1 && f2) {
-                        log(" SWITCH GO TO FACILITY " + myGroup + " and " + other);
-                        myGroup.goToFacility = otherF;
-                        other.goToFacility = myF;
-                        other.switchCount++;
-                        myGroup.switchCount++;
-                    }
-                }
-            }
-        }
+        switchGoToFacility(myGroup);
 
         //if (myGroup.isAeral() || !allEnIn
         //
@@ -995,6 +962,8 @@ public final class MyStrategy implements Strategy {
             }
         }
 
+        switchGoToFacility(myGroup);
+
 
         if (myGroup.goToFacility == null) {
             addToArray(plainArray, fc.get(opponent.getId()).get(CONTROL_CENTER).entrySet(), range, factor * controlCenterFactor * enemyFactor);
@@ -1017,6 +986,46 @@ public final class MyStrategy implements Strategy {
             //     counts.add(new AbstractMap.SimpleEntry<>(cf.add(2, 2), 1)); //TOO FAR
             // }
             addToArray(plainArray, counts, 2, factor);
+        }
+    }
+
+    private void switchGoToFacility(VehicleGroupInfo myGroup) {
+        if (myGroup.goToFacility != null && myGroup.switchCount < MAX_SWITCH_COUNT) {
+            //try to switch
+
+            for (int i = 0; i < 4; i++) {
+                for (VehicleGroupInfo other : myGroups) {
+                    if (other == myGroup) {
+                        continue;
+                    }
+                    if (other.goToFacility == null) {
+                        continue;
+                    }
+
+                    if (other.switchCount >= MAX_SWITCH_COUNT) {
+                        continue;
+                    }
+                    FacilityWrapper myF = myGroup.goToFacility;
+                    Point2D myAp = myGroup.getAveragePoint();
+
+                    Point2D otherAp = other.getAveragePoint();
+                    FacilityWrapper otherF = other.goToFacility;
+
+                    boolean f1 = otherAp.getDistanceTo(otherF) > otherAp.getDistanceTo(myF);
+                    boolean f2 = myAp.getDistanceTo(myF) > myAp.getDistanceTo(otherAp);
+
+                    double currentDistance = myAp.getDistanceTo(myF) + otherAp.getDistanceTo(otherF);
+                    double switchedDistance = myAp.getDistanceTo(otherF) + otherAp.getDistanceTo(myAp);
+
+                    if (currentDistance > switchedDistance * 1.03) {
+                        log(" SWITCH GO TO FACILITY " + myGroup + " and " + other);
+                        myGroup.goToFacility = otherF;
+                        other.goToFacility = myF;
+                        other.switchCount++;
+                        myGroup.switchCount++;
+                    }
+                }
+            }
         }
     }
 
