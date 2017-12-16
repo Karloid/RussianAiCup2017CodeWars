@@ -917,7 +917,7 @@ public final class MyStrategy implements Strategy {
             myGroup.goToFacility = null;
         }
 
-        switchGoToFacility(myGroup);
+        // switchGoToFacility(myGroup);
 
         //if (myGroup.isAeral() || !allEnIn
         //
@@ -935,7 +935,7 @@ public final class MyStrategy implements Strategy {
         }
 
 
-        if (myGroup.goToFacility == null || myGroup.getAveragePoint().getDistanceTo(myGroup.goToFacility) > 64 * 1.4) {
+        if (myGroup.goToFacility == null || myGroup.getAveragePoint().getDistanceTo(myGroup.goToFacility) > 64 * 5) {
             Point2D ap = myGroup.getAveragePoint();
             FacilityWrapper closestFree = null;
 
@@ -1932,12 +1932,42 @@ public final class MyStrategy implements Strategy {
 
                     break;
                 }
-
             }
-
         }
 
         groups.sort((o1, o2) -> o2.vehicleType.compareTo(o1.vehicleType));
+
+
+        //precalc gotofacilities
+        List<VehicleGroupInfo> groundGroups = groups.stream().filter(v -> !v.vehicles.get(0).v.isAerial()).collect(Collectors.toList());
+        Collection<FacilityWrapper> values = um.facilityById.values().stream().filter(v -> v.f.getType() == VEHICLE_FACTORY).collect(Collectors.toList());
+        if (!values.isEmpty()) {
+            GoToFacilitySetup bestSetup = null;
+
+            for (int i = 0; i < 100; i++) {
+                ArrayList<FacilityWrapper> fw = new ArrayList<>(values);
+                GoToFacilitySetup setup = new GoToFacilitySetup();
+
+                for (VehicleGroupInfo groundGroup : groundGroups) {
+                    if (fw.isEmpty()) {
+                        continue;
+                    }
+
+                    int index = (int) (Math.random() * fw.size());
+                    setup.map.put(groundGroup, fw.get(index));
+                    fw.remove(index);
+                }
+
+                if (bestSetup == null || bestSetup.getSum() > setup.getSum()) {
+                    bestSetup = setup;
+                }
+            }
+
+            for (Map.Entry<VehicleGroupInfo, FacilityWrapper> e : bestSetup.map.entrySet()) {
+                 e.getKey().goToFacility = e.getValue();
+            }
+        }
+
 
         return groups;
     }
