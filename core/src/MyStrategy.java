@@ -1011,7 +1011,17 @@ public final class MyStrategy implements Strategy {
                     Point2D otherAp = other.getAveragePoint();
                     FacilityWrapper otherF = other.goToFacility;
 
-                    boolean f1 = otherAp.getDistanceTo(otherF) > otherAp.getDistanceTo(myF);
+
+                    double distanceTo = otherAp.getDistanceTo(otherF);
+                    if (distanceTo == 0) {
+                        distanceTo = 1;
+                    }
+                    if (myAp.getDistanceTo(otherF) / distanceTo < 0.78 && distanceTo > 64) {
+                        myGroup.goToFacility = other.goToFacility;
+                        other.goToFacility = null; //TODO mb do not reset
+                    }
+
+                   /* boolean f1 = otherAp.getDistanceTo(otherF) > otherAp.getDistanceTo(myF);
                     boolean f2 = myAp.getDistanceTo(myF) > myAp.getDistanceTo(otherAp);
 
                     double currentDistance = myAp.getDistanceTo(myF) + otherAp.getDistanceTo(otherF);
@@ -1023,7 +1033,7 @@ public final class MyStrategy implements Strategy {
                         other.goToFacility = myF;
                         other.switchCount++;
                         myGroup.switchCount++;
-                    }
+                    }*/
                 }
             }
         }
@@ -1964,7 +1974,7 @@ public final class MyStrategy implements Strategy {
             }
 
             for (Map.Entry<VehicleGroupInfo, FacilityWrapper> e : bestSetup.map.entrySet()) {
-                 e.getKey().goToFacility = e.getValue();
+                e.getKey().goToFacility = e.getValue();
             }
         }
 
