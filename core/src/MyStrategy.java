@@ -1399,7 +1399,7 @@ public final class MyStrategy implements Strategy {
         if (me.getRemainingNuclearStrikeCooldownTicks() == 0 && scheduledStrike == null) {
             int remainingHp = um.enemyStats.remainingHp;
 
-            int minNuclearDmg = world.getTickIndex() > 8_000 ? (int) Math.min(getMinNuclearDmg(), remainingHp * 0.6) : getMinNuclearDmg();
+            int minNuclearDmg = world.getTickIndex() > 5_000 ? (int) Math.min(getMinNuclearDmg(), remainingHp * 0.35) : getMinNuclearDmg();
 
             NuclearStrike max = NuclearStrike.getMaxDmg(this, minNuclearDmg);
 
