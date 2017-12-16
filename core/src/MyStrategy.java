@@ -38,6 +38,8 @@ public final class MyStrategy implements Strategy {
     public static final int CAN_DISABLE_FEAR_SINCE_TICK = 9300;
     public static final int CAN_DISABLE_FEAR_SINCE_COUNT = 490;
     public static final int MAX_SWITCH_COUNT = 400;
+    public static final boolean ARRV_SPLIT_ENABLE = false;
+    public static final boolean AERIL_INITIAL_ROTATE = false;
     private static int constantId;
 
     private MyStrategyPainter painter = new EmptyPaintner();
@@ -1300,7 +1302,7 @@ public final class MyStrategy implements Strategy {
     }
 
     private boolean initialRotate(VehicleGroupInfo myGroup) {
-        if (!myGroup.isRotated && myGroup.vehicles.get(0).v.isAerial()) {
+        if (!myGroup.isRotated && myGroup.vehicles.get(0).v.isAerial() && AERIL_INITIAL_ROTATE) {
             myGroup.isRotated = true;
             scheduleSelectAll(myGroup);
             delayedMoves.add(move1 -> {
@@ -1775,12 +1777,13 @@ public final class MyStrategy implements Strategy {
 
         // List<VehicleWrapper> separatedVehicles = myGroup.countWillBeFurtherThenBefore(new Point2D(dx, dy), p);
         // boolean shouldScale = separatedVehicles.size() > 0;
-        boolean shouldScale = Math.sqrt(myGroup.count) * 6 < Math.max(myGroup.pointsInfo.rect.getWidth(), myGroup.pointsInfo.rect.getHeight());
+        boolean shouldScale = Math.sqrt(myGroup.count) * 8 < Math.max(myGroup.pointsInfo.rect.getWidth(), myGroup.pointsInfo.rect.getHeight());
 
-        shouldScale = world.getTickIndex() - myGroup.lastShrinkForGatherI > 350 && shouldScale;
+        shouldScale = world.getTickIndex() - myGroup.lastShrinkForGatherI > 350 && shouldScale && myGroup.shrinkCount < 3;
         if (shouldScale) {
             myGroup.lastShrinkForGatherI = world.getTickIndex();
 
+            myGroup.shrinkCount++;
             myGroup.nextShrinkIsScale = !myGroup.nextShrinkIsScale;
             if (myGroup.nextShrinkIsScale) {
                 // log(Utils.LOG_MOVING + " found " + separatedVehicles.size() + " separated vehicles for " + myGroup);
@@ -1894,7 +1897,7 @@ public final class MyStrategy implements Strategy {
             }
         }
 
-        if (world.getFacilities().length > 6) {
+        if (world.getFacilities().length > 6 && ARRV_SPLIT_ENABLE) {
             //TODO split arrvs
 
             for (VehicleGroupInfo group : groups) {

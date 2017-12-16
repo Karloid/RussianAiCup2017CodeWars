@@ -27,6 +27,7 @@ public class VehicleGroupInfo {
     public boolean nextShrinkIsScale;
     public boolean shrinkRotateToRight;
     public int noMoveCount;
+    public int shrinkCount;
 
     public VehicleGroupInfo(Ownership ownership, VehicleType vehicleType, MyStrategy myStrategy) {
         this.ownership = ownership;
