@@ -18,6 +18,7 @@ public class UnitManager {
     TickStats enemyStats;
     private List<VehicleWrapper> cachedMy;
     private List<VehicleWrapper> cachedEnemy;
+    public int maxMyHp;
 
 
     public UnitManager(MyStrategy mys) {
@@ -40,6 +41,8 @@ public class UnitManager {
         initTickVehCalcStats();
         initTickFacUpdates();
 
+
+        maxMyHp = streamVehicles(Ownership.ALLY).max(Comparator.comparingInt(value -> value.v.getDurability())).map(vehicleWrapper -> vehicleWrapper.v.getDurability()).orElse(50);
 
         if (myStats.isNonEmpty()) {
             mys.log("My stats: " + myStats);

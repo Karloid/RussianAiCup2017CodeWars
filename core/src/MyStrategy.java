@@ -1089,7 +1089,7 @@ public final class MyStrategy implements Strategy {
                     if (distanceTo == 0) {
                         distanceTo = 1;
                     }
-                    if (myAp.getDistanceTo(otherF) / distanceTo < 0.78 && distanceTo > 64) {
+                    if (myAp.getDistanceTo(otherF) / distanceTo < 0.78 && distanceTo > 64 && distanceTo < myAp.getDistanceTo(myF) - 32) {
                         myGroup.goToFacility = other.goToFacility;
                         other.goToFacility = null; //TODO mb do not reset
                     }

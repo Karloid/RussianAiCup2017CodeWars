@@ -37,7 +37,7 @@ public class NuclearStrike {
 
         long myId = myStrategy.me.getId();
 
-        if (myVehicle.v.getDurability() < 50) {
+        if (myVehicle.v.getDurability() < Math.min(50, myStrategy.um.maxMyHp * 0.8f)) {
             predictedDmg = 0;
             return;
         }
