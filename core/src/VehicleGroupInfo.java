@@ -28,6 +28,7 @@ public class VehicleGroupInfo {
     public boolean shrinkRotateToRight;
     public int noMoveCount;
     public int shrinkCount;
+    public boolean isScaledNuclear;
 
     public VehicleGroupInfo(Ownership ownership, VehicleType vehicleType, MyStrategy myStrategy) {
         this.ownership = ownership;

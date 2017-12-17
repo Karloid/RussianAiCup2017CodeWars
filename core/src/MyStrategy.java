@@ -40,6 +40,7 @@ public final class MyStrategy implements Strategy {
     public static final int MAX_SWITCH_COUNT = 400;
     public static final boolean ARRV_SPLIT_ENABLE = false;
     public static final boolean AERIL_INITIAL_ROTATE = false;
+    private static final boolean SCALE_UP_ON_NUCLEAR = false;
     private static int constantId;
 
     private MyStrategyPainter painter = new EmptyPaintner();
@@ -171,6 +172,8 @@ public final class MyStrategy implements Strategy {
 
             if (initialScale(myGroup)) continue;
 
+            if (scaleOperations(myGroup)) continue;
+
             if (myGroup.goToFacility != null && myGroup.getAveragePoint().getDistanceTo(myGroup.getGoToFacilityPoint()) < 14) {
                 if (!myGroup.goToFacility.isMy() || myGroup.goToFacility.f.getCapturePoints() != game.getMaxFacilityCapturePoints()) {
                     log(Utils.LOG_MOVING + " skip move because of capturing " + myGroup);
@@ -183,6 +186,72 @@ public final class MyStrategy implements Strategy {
                 schedulePotentialMoveToPoint(myGroup);
             }
         }
+    }
+
+    private boolean scaleOperations(VehicleGroupInfo myGroup) {
+        if (!SCALE_UP_ON_NUCLEAR) {
+            return false;
+        }
+        if (opponent.getRemainingNuclearStrikeCooldownTicks() > 50) {
+            if (myGroup.isScaledNuclear) {
+                myGroup.isScaledNuclear = false;
+                scheduleSelectAll(myGroup);
+                delayedMoves.add(move1 -> {
+                    move1.setAction(ActionType.SCALE);
+                    move1.setX(myGroup.getAveragePoint().getX());
+                    move1.setY(myGroup.getAveragePoint().getY());
+                    move1.setFactor(0.1);
+                });
+                return true;
+            }
+        } else if (myGroup.count > 55) {
+            if (!myGroup.isScaledNuclear) {
+                Point2D myAp = myGroup.getCellAveragePoint();
+
+
+                Map<VehicleType, Map<Point2D, Integer>> unitsCount = getUnitsCount(true);
+                enemyUnitsCount = null;
+                myUnitsCount = null;
+                for (Map.Entry<VehicleType, Map<Point2D, Integer>> points : unitsCount.entrySet()) {
+                    VehicleType key = points.getKey();
+                    double visionRange = getVisionRange(key) / cellSize + 3;
+                    for (Point2D point2D : points.getValue().keySet()) {
+                        if (point2D.getDistanceTo(myAp) < visionRange) {
+                            myGroup.isScaledNuclear = true;
+                            scheduleSelectAll(myGroup);
+                            delayedMoves.add(move1 -> {
+                                move1.setAction(ActionType.SCALE);
+                                move1.setX(myGroup.getAveragePoint().getX());
+                                move1.setY(myGroup.getAveragePoint().getY());
+                                move1.setFactor(1.5);
+                            });
+                            return true;
+                        }
+
+
+                    }
+
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private double getVisionRange(VehicleType key) {
+        switch (key) {
+            case ARRV:
+                return game.getArrvVisionRange();
+            case FIGHTER:
+                return game.getFighterVisionRange();
+            case HELICOPTER:
+                return game.getHelicopterVisionRange();
+            case IFV:
+                return game.getIfvVisionRange();
+            case TANK:
+                return game.getTankVisionRange();
+        }
+        return 100;
     }
 
     private boolean trySetProduction() {
@@ -1154,7 +1223,7 @@ public final class MyStrategy implements Strategy {
 
 
             for (VehicleWrapper vehicle : um.vehicleById.values()) {
-                if (currentMapGroup.vehicles.contains(vehicle)) {
+                if (currentMapGroup != null && currentMapGroup.vehicles.contains(vehicle)) {
                     continue;
                 }
 

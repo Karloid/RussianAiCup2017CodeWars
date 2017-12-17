@@ -147,8 +147,9 @@ public class RewindClientWrapper implements MyStrategyPainter {
             }
         }
 
-        rc.message(String.format(Locale.US, "\\nMe: %s Opponent: %s\\nActionCooldown: %s\\nNuclearCooldown: %s \\nMyGroups count %s",
-                mys.me.getScore(), mys.opponent.getScore(), mys.me.getRemainingActionCooldownTicks(), mys.me.getRemainingNuclearStrikeCooldownTicks(), myGroups.size()));
+        rc.message(String.format(Locale.US, "\\nMe: %s Opponent: %s\\nActionCooldown: %s\\nNuclearCooldown: %s \\nEnemyNuclearCooldown: %s \\nMyGroups count %s",
+                mys.me.getScore(), mys.opponent.getScore(), mys.me.getRemainingActionCooldownTicks(), mys.me.getRemainingNuclearStrikeCooldownTicks(),
+                mys.opponent.getRemainingNuclearStrikeCooldownTicks(), myGroups.size()));
 
         ArrayList<Map.Entry<ActionType, Integer>> entries = new ArrayList<>(mys.movesStats.entrySet());
         String msg = "\\nMy moves count: " + mys.movesCount + "\\n";
@@ -212,11 +213,11 @@ public class RewindClientWrapper implements MyStrategyPainter {
                     }
                     //mys.log(String.format("%s %s %s - v: %s", myGroup.vehicleType, realX, realY, (int) v));
                     //System.out.print(String.format("%s %s %s - v: %s", myGroup.vehicleType, realX, realY, (int) v));
-                //    System.out.print((int) v + " ");
+                    //    System.out.print((int) v + " ");
                     rc.rect(realX, realY, realX + cellSize, realY + cellSize, new Color(133, alpha, 255 - alpha, 100), 1);
                 }
             }
-           // System.out.println();
+            // System.out.println();
         }
 
         // rc.message(String.format("\\n%s\\nMap Draw: min %.2f max %.2f \\ndelta %.2f", myGroup.vehicleType, min, max, delta));
