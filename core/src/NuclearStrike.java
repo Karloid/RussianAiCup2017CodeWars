@@ -47,9 +47,17 @@ public class NuclearStrike {
                 .mapToDouble(veh -> {
                     double distanceTo;
                     if (actualTarget != null) {
-                        distanceTo = veh.getPos(PREDICTION_TICK).getDistanceTo(actualTarget);
+                        if (veh.isEnemy) {
+                            distanceTo = veh.getPos(0).getDistanceTo(actualTarget);
+                        } else {
+                            distanceTo = veh.getPos(30).getDistanceTo(actualTarget);
+                        }
                     } else {
-                        distanceTo = veh.getDistanceToPredictBoth(target, PREDICTION_TICK);
+                        if (veh.isEnemy) {
+                            distanceTo = veh.getDistanceToPredictBoth(target, 0);
+                        } else {
+                            distanceTo = veh.getPos(30).getDistanceTo(target);
+                        }
                     }
 
                     if (distanceTo > maxRadius) {
@@ -100,9 +108,7 @@ public class NuclearStrike {
                                 .filter(myVehicle ->
                                         myVehicle.getDistanceToPredictTarget(v, PREDICTION_TICK) < myVehicle.getActualVisionRange())
                                 .map(myVehicle -> new NuclearStrike(myVehicle, v, mys)))
-                .filter(nuclearStrike -> {
-                    return nuclearStrike.predictedDmg > minNuclearDmg;
-                })
+                .filter(nuclearStrike -> nuclearStrike.predictedDmg > minNuclearDmg)
                 .max(Comparator.comparingDouble(o -> o.predictedDmg))
                 .orElse(null);
     }

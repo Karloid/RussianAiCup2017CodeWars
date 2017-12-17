@@ -228,7 +228,6 @@ public final class MyStrategy implements Strategy {
                             return true;
                         }
 
-
                     }
 
                 }
@@ -464,8 +463,13 @@ public final class MyStrategy implements Strategy {
                     addToArray(plainArray, enemyTanks, range, .1f);
                     addToArray(plainArray, enemyArrvs, range, .1f);
 
-                    subFromArray(plainArray, enemyTanks, (game.getIfvAerialAttackRange() + 10) / cellSize, 1.4f, -1);
-                    subFromArray(plainArray, enemyArrvs, (game.getIfvAerialAttackRange() + 10) / cellSize, 1.4f, -1);
+                    if (enemyFighters.isEmpty() && enemyHelics.isEmpty()) {
+                        subFromArray(plainArray, enemyTanks, (game.getFighterVisionRange() - 15) / cellSize, 1.4f, -1);
+                        subFromArray(plainArray, enemyArrvs, (game.getFighterVisionRange() - 15) / cellSize, 1.4f, -1);
+                    } else {
+                        subFromArray(plainArray, enemyTanks, (game.getIfvAerialAttackRange() + 10) / cellSize, 1.4f, -1);
+                        subFromArray(plainArray, enemyArrvs, (game.getIfvAerialAttackRange() + 10) / cellSize, 1.4f, -1);
+                    }
                 }
             }
 
@@ -473,7 +477,7 @@ public final class MyStrategy implements Strategy {
             {
                 Set<Map.Entry<Point2D, Integer>> ifvCount = getUnitsCount(true).get(IFV).entrySet();
 
-                double range = (game.getIfvAerialAttackRange() * 1.8) / cellSize;
+                double range = (game.getIfvAerialAttackRange() * 2.4) / cellSize;
 
                 int factor = 6;
 
@@ -561,7 +565,7 @@ public final class MyStrategy implements Strategy {
                 }
 
                 if (!disableFear) {
-                    subFromArray(plainArray, enemyIfv, (game.getHelicopterAerialAttackRange() + 30) / cellSize, 3.2f, minValForContra);
+                    subFromArray(plainArray, enemyIfv, (game.getHelicopterAerialAttackRange() * 2.4) / cellSize, 3.2f, minValForContra);
                     subFromArray(plainArray, enemyHelics, (game.getIfvAerialAttackRange() + 10) / cellSize, 1.4f, minValForContra);
                 }
 
@@ -1509,19 +1513,24 @@ public final class MyStrategy implements Strategy {
                     log(Utils.LOG_NUCLEAR_STRIKE + " start " + max);
                 });
 
-                delayedMoves.addFirst(move1 -> {
-                    move.setAction(ActionType.MOVE);
-                    move.setX(0);
-                    move.setY(0);
-                    log(Utils.LOG_NUCLEAR_STRIKE + " stop unit " + max);
-                });
+                double startDistance = max.myVehicle.getPos(0).getDistanceTo(max.target);
+                double nextTickDistance = max.myVehicle.getPos(1).getDistanceTo(max.target);
 
-                delayedMoves.addFirst(move1 -> {
-                    clearAndSelectOneUnit(max, move1, max.myVehicle);  //TODO select group
+                if (nextTickDistance > startDistance) { //stop right there
+                    delayedMoves.addFirst(move1 -> {
+                        move.setAction(ActionType.MOVE);
+                        move.setX(0);
+                        move.setY(0);
+                        log(Utils.LOG_NUCLEAR_STRIKE + " stop unit " + max);
+                    });
 
-                    scheduledStrike.createdAt = world.getTickIndex();
-                    log(Utils.LOG_NUCLEAR_STRIKE + " select unit " + max);
-                });
+                    delayedMoves.addFirst(move1 -> {
+                        clearAndSelectOneUnit(max, move1, max.myVehicle);  //TODO select group
+
+                        scheduledStrike.createdAt = world.getTickIndex();
+                        log(Utils.LOG_NUCLEAR_STRIKE + " select unit " + max);
+                    });
+                }
                 return true;
             }
 
